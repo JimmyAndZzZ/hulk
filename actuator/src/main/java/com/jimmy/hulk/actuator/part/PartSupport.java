@@ -228,7 +228,7 @@ public class PartSupport {
     private void scanFunctionClass() throws Exception {
         ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
         provider.addIncludeFilter(new AssignableTypeFilter(AbstractFunction.class));
-        Set<BeanDefinition> scanList = provider.findCandidateComponents("com.sumscope.ss.engine.actuator.function");
+        Set<BeanDefinition> scanList = provider.findCandidateComponents("com.jimmy.hulk.actuator.function");
         for (BeanDefinition bean : scanList) {
             Class<?> clazz = Class.forName(bean.getBeanClassName());
 

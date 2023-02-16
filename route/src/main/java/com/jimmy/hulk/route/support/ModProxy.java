@@ -35,7 +35,7 @@ public class ModProxy {
                 false);
         provider.addIncludeFilter(new AssignableTypeFilter(Mod.class));
 
-        Set<BeanDefinition> scanList = provider.findCandidateComponents("com.sumscope.ss.engine.route.partition");
+        Set<BeanDefinition> scanList = provider.findCandidateComponents("com.jimmy.hulk.route.partition");
         for (BeanDefinition bean : scanList) {
             Class<?> clazz = Class.forName(bean.getBeanClassName());
 

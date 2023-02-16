@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.Map;
 
 @Data
-@ConfigurationProperties(prefix = "sumscope.data")
+@ConfigurationProperties(prefix = "jimmy.data")
 public class DataProperties {
 
     private String scanPath;

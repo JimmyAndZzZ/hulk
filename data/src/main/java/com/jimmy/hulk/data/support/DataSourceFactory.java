@@ -166,7 +166,7 @@ public class DataSourceFactory {
         // 扫描带有自定义注解的类
         provider.addIncludeFilter(new AnnotationTypeFilter(ConnectionType.class));
 
-        List<String> paths = Lists.newArrayList("com.sumscope.ss.engine.data.connection");
+        List<String> paths = Lists.newArrayList("com.jimmy.hulk.data.connection");
         //初始化condition上下文
         ConditionContextImpl conditionContext = new ConditionContextImpl(beanFactory);
         for (String path : paths) {
