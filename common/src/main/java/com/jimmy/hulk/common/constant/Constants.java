@@ -1,9 +1,5 @@
 package com.jimmy.hulk.common.constant;
 
-import cn.hutool.core.io.FileUtil;
-
-import java.io.File;
-
 public interface Constants {
 
     interface Actuator {
@@ -12,6 +8,8 @@ public interface Constants {
         String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
         String ALL_COLUMN = "*";
+
+        String FUNCTION_PATH = "com.jimmy.hulk.actuator.function";
 
         interface CacheKey {
             String SELECT_COLUMNS_KEY = "select:columns:";
@@ -51,6 +49,10 @@ public interface Constants {
         String SEPARATOR = "/";
     }
 
+    interface Route {
+        String PARTITION_PATH = "com.jimmy.hulk.route.partition";
+    }
+
     interface Data {
 
         String TARGET_PARAM_KEY = "target";
@@ -66,6 +68,8 @@ public interface Constants {
         String SCAN_PATH_CONDITION_PARSE = "com.jimmy.hulk.data.parse.condition";
         //dml解析类扫描路径
         String SCAN_PATH_DML_PARSE = "com.jimmy.hulk.data.parse.dml";
+
+        String SCAN_PATH_CONNECTION = "com.jimmy.hulk.data.connection";
 
         String EXCEL_PROPERTIES_CONTEXT_KEY = "EXCEL_PROPERTIES_CONTEXT";
 

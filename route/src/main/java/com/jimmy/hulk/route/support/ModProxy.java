@@ -3,6 +3,7 @@ package com.jimmy.hulk.route.support;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ArrayUtil;
 import com.google.common.collect.Maps;
+import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.route.base.Mod;
@@ -35,7 +36,7 @@ public class ModProxy {
                 false);
         provider.addIncludeFilter(new AssignableTypeFilter(Mod.class));
 
-        Set<BeanDefinition> scanList = provider.findCandidateComponents("com.jimmy.hulk.route.partition");
+        Set<BeanDefinition> scanList = provider.findCandidateComponents(Constants.Route.PARTITION_PATH);
         for (BeanDefinition bean : scanList) {
             Class<?> clazz = Class.forName(bean.getBeanClassName());
 

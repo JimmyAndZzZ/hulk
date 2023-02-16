@@ -21,6 +21,7 @@ import com.jimmy.hulk.authority.base.AuthenticationManager;
 import com.jimmy.hulk.authority.core.AuthenticationTable;
 import com.jimmy.hulk.authority.core.UserDetail;
 import com.jimmy.hulk.authority.datasource.DatasourceCenter;
+import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import com.jimmy.hulk.common.enums.JoinTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
@@ -228,7 +229,7 @@ public class PartSupport {
     private void scanFunctionClass() throws Exception {
         ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
         provider.addIncludeFilter(new AssignableTypeFilter(AbstractFunction.class));
-        Set<BeanDefinition> scanList = provider.findCandidateComponents("com.jimmy.hulk.actuator.function");
+        Set<BeanDefinition> scanList = provider.findCandidateComponents(Constants.Actuator.FUNCTION_PATH);
         for (BeanDefinition bean : scanList) {
             Class<?> clazz = Class.forName(bean.getBeanClassName());
 
