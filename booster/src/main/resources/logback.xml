@@ -1,0 +1,57 @@
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+    <!-- 彩色日志 -->
+    <!-- 彩色日志依赖的渲染类 -->
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+    <conversionRule conversionWord="wex"
+                    converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+    <conversionRule conversionWord="wEx"
+                    converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+
+    <property name="application_name" value="qq-agent"/>
+    <property name="all_file_name" value="../logs/%d{yyyy-MM-dd}/${application_name}.%d{yyyy-MM-dd}.%i.log"/>
+    <property name="max_history" value="60"/>
+    <!-- 彩色日志格式 -->
+    <property name="console_pattern"
+              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%level){blue} %clr(${PID}){magenta} %clr([%thread]){orange} %clr(%logger){cyan} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+    <property name="all_file_pattern"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %level ${PID}  [%thread] %logger %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+
+
+    <contextName>${application_name}</contextName>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${console_pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 设置按尺寸和时间（同时满足）分割 -->
+        <encoder>
+            <pattern>${all_file_pattern}</pattern>
+        </encoder>
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${all_file_name}</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>5</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="async" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>64</queueSize>
+        <neverBlock>true</neverBlock>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="file"/>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="console"/>
+        <appender-ref ref="async"/>
+    </root>
+</configuration>

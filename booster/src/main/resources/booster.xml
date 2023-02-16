@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hulk>
+    <system>
+        <property name="port">1112</property>
+        <property name="pageSize">1000</property>
+    </system>
+</hulk>
