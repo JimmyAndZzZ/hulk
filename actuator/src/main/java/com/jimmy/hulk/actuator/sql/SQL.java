@@ -11,6 +11,7 @@ import com.jimmy.hulk.actuator.base.Operate;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.ColumnTypeEnum;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.config.DataSourceProperty;
@@ -196,7 +197,7 @@ abstract class SQL<T> implements Operate {
         //数据源是否支持sql运行
         String dsName = dsNames.stream().findFirst().get();
         DataSourceProperty byName = partSupport.getDataSourceProperty(ExecuteHolder.getUsername(), dsName, true);
-        if (!byName.getDs().getIsSupportSql()) {
+        if (!byName.getDs().equals(DatasourceEnum.MYSQL)) {
             return false;
         }
         //是否包含表分区
