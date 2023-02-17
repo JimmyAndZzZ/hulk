@@ -162,6 +162,10 @@ public class XmlParse {
                         systemVariableContext.setSerializerType(value);
                     }
 
+                    if (name.equalsIgnoreCase("defaultExpire")) {
+                        systemVariableContext.setDefaultExpire(Integer.valueOf(value));
+                    }
+
                     if (name.equalsIgnoreCase("port")) {
                         systemVariableContext.setPort(Integer.valueOf(value));
                     }

@@ -3,5 +3,147 @@
     <system>
         <property name="port">1112</property>
         <property name="pageSize">1000</property>
+        <property name="defaultExpire">30</property>
+        <property name="fileStorePath">/tmp/</property>
     </system>
+
+    <datasourceList>
+        <datasource type="mysql">
+            <name>test1</name>
+            <password><![CDATA[123456]]></password>
+            <schema>test1</schema>
+            <clusterName></clusterName>
+            <url>
+                <![CDATA[jdbc:mysql://localhost:3306/test1?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8]]></url>
+            <username>root</username>
+        </datasource>
+
+        <datasource type="mysql">
+            <name>test3</name>
+            <password><![CDATA[123456]]></password>
+            <schema>test3</schema>
+            <clusterName></clusterName>
+            <url>
+                <![CDATA[jdbc:mysql://localhost:3306/test3?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8]]></url>
+            <username>root</username>
+        </datasource>
+
+        <datasource type="excel">
+            <name>test_excel</name>
+            <schema>test_excel</schema>
+            <clusterName></clusterName>
+            <!--excel文件路径-->
+            <url>
+                <![CDATA[/tmp]]></url>
+        </datasource>
+
+        <datasource type="mysql">
+            <name>test2</name>
+            <password><![CDATA[123456]]></password>
+            <schema>test2</schema>
+            <clusterName></clusterName>
+            <url>
+                <![CDATA[jdbc:mysql://localhost:3306/test2?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8]]></url>
+            <username>root</username>
+        </datasource>
+
+        <datasource type="mysql">
+            <name>test_report</name>
+            <password><![CDATA[123456]]></password>
+            <schema>test_report</schema>
+            <clusterName></clusterName>
+            <url>
+                <![CDATA[jdbc:mysql://localhost:3306/test_report?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8]]></url>
+            <username>root</username>
+        </datasource>
+
+        <datasource type="elasticsearch">
+            <name>es</name>
+            <url>
+                <![CDATA[localhost:9200]]></url>
+        </datasource>
+
+        <datasource type="clickhouse">
+            <name>test_ck</name>
+            <schema>test_ck</schema>
+            <clusterName>test_ck_cluster_name</clusterName>
+            <url>
+                <![CDATA[jdbc:clickhouse://localhost:1111/test_ck]]></url>
+            <username>default</username>
+        </datasource>
+
+        <datasource type="neo4j">
+            <name>neo4j</name>
+            <clusterName></clusterName>
+            <url>
+                <![CDATA[bolt://localhost:1111]]></url>
+            <username>neo4j</username>
+            <password>neo4j</password>
+        </datasource>
+    </datasourceList>
+
+    <examples>
+        <example name="test1" title="测试库">
+            <write>test1</write>
+            <read>test3</read>
+            <table tableName="test_int" priKeyName="id" priKeyStrategy="auto" isNeedReturnKey="true"></table>
+        </example>
+
+        <example name="test_report">
+            <write>test_report</write>
+        </example>
+
+        <example name="test2">
+            <write>test2</write>
+        </example>
+
+        <example name="test_excel">
+            <write>test_excel</write>
+        </example>
+
+        <example name="es">
+            <write>es</write>
+        </example>
+
+        <example name="test_ck">
+            <write>test_ck</write>
+        </example>
+
+        <example name="neo4j">
+            <write>neo4j</write>
+        </example>
+
+    </examples>
+
+    <partitions>
+        <partition partitionColumn="trace_id" mod="long-mod" dsName="test1" priKeyColumn="id" table="example_par"
+                   type="mysql">
+            <table prefix="example_par_" range="[0,10)" dsName="test1">
+                <name>example_par_1000</name>
+            </table>
+            <table prefix="example_par_" range="[0,10)" dsName="test_report"></table>
+        </partition>
+    </partitions>
+
+    <users>
+        <user role="ADMINISTRATOR">
+            <username>root</username>
+            <password><![CDATA[123456]]></password>
+        </user>
+
+        <user role="ORDINARY_USER">
+            <username>dev</username>
+            <password><![CDATA[123456]]></password>
+            <schema dsName="test1" isAllAllow="true">
+                <table table="test00" filterFields="inputer" dmlAllowMethods="INSERT"></table>
+                <table table="test_int" filterFields="t_2" dmlAllowMethods="INSERT,UPDATE,DELETE"></table>
+            </schema>
+        </user>
+
+        <user role="GUEST">
+            <username>guest</username>
+            <password><![CDATA[123456]]></password>
+            <schema dsName="test1"/>
+        </user>
+    </users>
 </hulk>
