@@ -16,7 +16,9 @@
 
 #### 安装
 
-下载tar包后解压缩，对conf目录下booster.xml进行配置
+运行命令
+> mvn clean install -Dmaven.test.skip=true
+
 
 ----
 
