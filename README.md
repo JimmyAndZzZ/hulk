@@ -135,3 +135,68 @@
     </user>
 </users>
 ```
+
+### 自定义SQL
+
+----
+
+#### cacheQuery
+
+```sql
+CACHE
+from 'test1' EXPIRE '10'  sql ' SELECT
+	t1.f1,
+	t1.f2,
+	t1.f3,
+	t2.f4 
+FROM
+	test1.table_1 AS t1
+	INNER JOIN test3.table_2 AS t2 ON t1.f1 = t2.f1 
+	AND t1.create_date > ''2022-12-30 16:29:41:00''
+	where t1.f2=''N0000342023CORLEB01'' or t2.f3=''111'''    
+```
+
+> EXPIRE代表过期时间，默认为系统配置，单位分钟
+
+----
+
+#### flush
+
+```sql
+flush
+to 'test_excel' index 'table3' MAPPER '' as ' SELECT
+	t1.f1,
+	t1.f2,
+	t1.f3,
+	t2.f4 
+FROM
+	test1.table_1 AS t1
+	INNER JOIN test3.table_2 AS t2 ON t1.f1 = t2.f1 
+	AND t1.create_date > ''2022-12-30 16:29:41:00''
+	where t1.f2=''N0000342023CORLEB01'' or t2.f3=''123'''
+```
+
+> to代表目标数据源，index代表目标表，mapper代表字段映射以及插入方式，可以参考源码com.jimmy.hulk.actuator.sql.Flush
+
+----
+
+#### native
+
+```sql
+NATIVE
+EXECUTE|QUERY 'test1' SQL 'select 1 from 1'      
+```
+
+> EXECUTE|QUERY 可选，execute执行ddl或者dml操作，query代表原生SQL查询
+----
+
+### 补充
+
+目前平台刚通过测试阶段，欢迎大家一起补充。
+
+#### 未完成点
+
+- 目前navicat支持查看，但dml操作提示主键未找到后期会修复
+- 目前不支持group by、exists复杂性sql
+- 聚合函数目前只支持count,max,min,avg
+- alter语句目前不支持
