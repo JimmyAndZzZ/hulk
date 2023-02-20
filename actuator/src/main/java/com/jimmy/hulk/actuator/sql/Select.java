@@ -16,7 +16,7 @@ import com.jimmy.hulk.actuator.core.ConditionPart;
 import com.jimmy.hulk.actuator.core.Null;
 import com.jimmy.hulk.actuator.core.Row;
 import com.jimmy.hulk.actuator.memory.MemoryPool;
-import com.jimmy.hulk.actuator.other.MapComparator;
+import com.jimmy.hulk.data.other.MapComparator;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.core.Column;

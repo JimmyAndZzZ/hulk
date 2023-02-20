@@ -1,25 +1,26 @@
 package com.jimmy.hulk.data.data;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.jimmy.hulk.common.constant.Constants;
+import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.condition.ExcelCondition;
-import com.jimmy.hulk.data.core.PageResult;
-import com.jimmy.hulk.data.transaction.TransactionManager;
 import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.core.Page;
-import com.jimmy.hulk.data.core.QueryPlus;
-import com.jimmy.hulk.data.core.Wrapper;
+import com.jimmy.hulk.data.condition.ExcelCondition;
+import com.jimmy.hulk.data.core.*;
 import com.jimmy.hulk.data.other.DynamicReadListener;
 import com.jimmy.hulk.data.other.ExcelProperties;
+import com.jimmy.hulk.data.other.MapComparator;
+import com.jimmy.hulk.data.transaction.TransactionManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -93,7 +94,7 @@ public class ExcelData extends BaseData {
 
         EasyExcel.read(path, dynamicReadListener).excelType(this.excelType).sheet(sheet).doRead();
         Integer count = dynamicReadListener.getCount();
-        List<Map<String, Object>> result = dynamicReadListener.getResult();
+        List<Map<String, Object>> result = this.aggregateHandler(wrapper, dynamicReadListener.getResult());
         if (CollUtil.isEmpty(result)) {
             return pageResult;
         }
@@ -117,7 +118,7 @@ public class ExcelData extends BaseData {
         }
 
         EasyExcel.read(path, dynamicReadListener).excelType(this.excelType).sheet(sheet).doRead();
-        List<Map<String, Object>> result = dynamicReadListener.getResult();
+        List<Map<String, Object>> result = this.aggregateHandler(wrapper, dynamicReadListener.getResult());
         if (CollUtil.isEmpty(result)) {
             return Lists.newArrayList();
         }
@@ -216,7 +217,7 @@ public class ExcelData extends BaseData {
         }
 
         EasyExcel.read(path, dynamicReadListener).excelType(this.excelType).sheet(sheet).doRead();
-        return dynamicReadListener.getResult();
+        return this.aggregateHandler(wrapper, dynamicReadListener.getResult());
     }
 
     @Override
@@ -246,12 +247,133 @@ public class ExcelData extends BaseData {
 
         EasyExcel.read(path, dynamicReadListener).excelType(this.excelType).sheet(sheet).doRead();
         List<Map<String, Object>> result = dynamicReadListener.getResult();
+        result = this.aggregateHandler(wrapper, result);
         return CollUtil.isEmpty(result) ? null : result.get(0);
     }
 
     @Override
     public boolean queryIsExist(Wrapper wrapper) {
         return this.count(wrapper) > 0;
+    }
+
+    /**
+     * 聚合函数处理
+     *
+     * @param wrapper
+     * @param result
+     * @return
+     */
+    private List<Map<String, Object>> aggregateHandler(Wrapper wrapper, List<Map<String, Object>> result) {
+        QueryPlus queryPlus = wrapper.getQueryPlus();
+        Set<String> select = queryPlus.getSelect();
+        List<String> groupBy = queryPlus.getGroupBy();
+        List<AggregateFunction> aggregateFunctions = queryPlus.getAggregateFunctions();
+
+        if (CollUtil.isEmpty(result)) {
+            return result;
+        }
+
+        if (CollUtil.isEmpty(groupBy) && CollUtil.isEmpty(aggregateFunctions)) {
+            return result;
+        }
+
+        if (CollUtil.isEmpty(groupBy) && CollUtil.isNotEmpty(aggregateFunctions)) {
+            Map<String, Object> doc = Maps.newHashMap();
+
+            for (AggregateFunction aggregateFunction : aggregateFunctions) {
+                doc.put(aggregateFunction.getAlias(), this.aggregateCalculate(result, aggregateFunction.getAggregateType(), aggregateFunction.getColumn()));
+            }
+
+            if (CollUtil.isEmpty(select)) {
+                return Lists.newArrayList(doc);
+            }
+
+            return result.stream().map(map -> {
+                Map<String, Object> data = Maps.newHashMap(doc);
+                for (String s : select) {
+                    data.put(s, map.get(s));
+                }
+
+                return data;
+            }).collect(Collectors.toList());
+        }
+        //groupby
+        Map<String, List<Map<String, Object>>> groupby = result.stream().collect(Collectors.groupingBy(m -> this.getKey(m, groupBy)));
+
+        List<Map<String, Object>> list = Lists.newArrayList();
+
+        for (Map.Entry<String, List<Map<String, Object>>> entry : groupby.entrySet()) {
+            List<Map<String, Object>> mapValue = entry.getValue();
+
+            Map<String, Object> map = mapValue.stream().findFirst().get();
+            Map<String, Object> data = Maps.newHashMap();
+
+            for (String s : groupBy) {
+                data.put(s, map.get(s));
+            }
+
+            for (AggregateFunction aggregateFunction : aggregateFunctions) {
+                data.put(aggregateFunction.getAlias(), this.aggregateCalculate(mapValue, aggregateFunction.getAggregateType(), aggregateFunction.getColumn()));
+            }
+
+            list.add(data);
+        }
+
+        return list;
+    }
+
+    /**
+     * 获取groupby key
+     *
+     * @return
+     */
+    private String getKey(Map<String, Object> map, List<String> groupBy) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < groupBy.size(); i++) {
+            if (i > 0) {
+                sb.append(":");
+            }
+
+            String s = groupBy.get(i);
+            Object o = map.get(s);
+            sb.append(o != null ? o.toString() : "NULL");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 获取聚合计算结果
+     *
+     * @param result
+     * @param aggregateEnum
+     * @param name
+     * @return
+     */
+    private Object aggregateCalculate(List<Map<String, Object>> result, AggregateEnum aggregateEnum, String name) {
+        switch (aggregateEnum) {
+            case COUNT:
+                return result.size();
+            case MAX:
+                return result.stream()
+                        .filter(map -> map.get(name) != null)
+                        .max(new MapComparator(name)).get().get(name);
+            case MIN:
+                return result.stream()
+                        .filter(map -> map.get(name) != null)
+                        .min(new MapComparator(name)).get().get(name);
+            case AVG:
+                return result.stream()
+                        .filter(map -> Convert.toDouble(map.get(name)) != null)
+                        .mapToDouble(map -> Convert.toDouble(map.get(name))).average().orElse(0D);
+            case SUM:
+                return result.stream()
+                        .filter(map -> map.get(name) != null)
+                        .mapToDouble(map -> NumberUtil.parseDouble(map.get(name).toString())).sum();
+        }
+
+        return null;
     }
 
     /**

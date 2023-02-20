@@ -10,7 +10,7 @@ import com.jimmy.hulk.actuator.core.ConditionPart;
 import com.jimmy.hulk.actuator.core.Fragment;
 import com.jimmy.hulk.actuator.core.Null;
 import com.jimmy.hulk.actuator.core.Row;
-import com.jimmy.hulk.actuator.other.MapComparator;
+import com.jimmy.hulk.data.other.MapComparator;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.ConditionEnum;
