@@ -70,6 +70,10 @@ abstract class SQL<T> implements Operate {
     }
 
     public T error(ParseResultNode parseResultNode, Exception e) {
+        if (!(e instanceof HulkException)) {
+            log.error("SQL执行失败,{}", parseResultNode.getSql(), e);
+        }
+
         throw new HulkException("执行失败", ModuleEnum.ACTUATOR);
     }
 

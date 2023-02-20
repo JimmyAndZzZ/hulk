@@ -91,7 +91,7 @@ public class Neo4jDatasource extends BaseDatasource<Driver> {
 
         driver = GraphDatabase.driver(url, AuthTokens.basic(username, password));
 
-        Driver put = neo4jCache.put(name, driver);
+        Driver put = neo4jCache.putIfAbsent(name, driver);
         if (put != null) {
             driver.close();
             return put;

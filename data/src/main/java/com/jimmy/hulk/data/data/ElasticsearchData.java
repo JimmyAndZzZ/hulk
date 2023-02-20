@@ -475,6 +475,7 @@ public class ElasticsearchData extends BaseData {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder allCondition = QueryBuilders.boolQuery();
         //and条件处理
+        List<String> groupBy = plus.getGroupBy();
         List<Condition> conditions = plus.getConditions();
         if (CollUtil.isNotEmpty(conditions)) {
             for (Condition condition : conditions) {

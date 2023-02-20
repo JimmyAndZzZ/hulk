@@ -55,7 +55,7 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
         }
 
         dataSource = (HikariDataSource) this.getDataSourceWithoutCache(timeout);
-        HikariDataSource put = dsCache.put(name, dataSource);
+        HikariDataSource put = dsCache.putIfAbsent(name, dataSource);
         if (put != null) {
             dataSource.close();
             return put;

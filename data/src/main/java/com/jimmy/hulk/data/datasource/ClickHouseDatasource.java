@@ -47,7 +47,7 @@ public class ClickHouseDatasource extends BaseDatasource<javax.sql.DataSource> {
         }
 
         dataSource = (ru.yandex.clickhouse.ClickHouseDataSource) this.getDataSourceWithoutCache(null);
-        ClickHouseDataSource put = dsCache.put(name, dataSource);
+        ClickHouseDataSource put = dsCache.putIfAbsent(name, dataSource);
         if (put != null) {
             dataSource = null;
             return put;

@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.jimmy.hulk.common.enums.DatasourceEnum.MYSQL;
@@ -39,7 +40,7 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
 
     private static final String DEFAULT_DELIMITER = ";";
 
-    private static Map<String, HikariDataSource> dsCache = Maps.newConcurrentMap();
+    private static ConcurrentMap<String, HikariDataSource> dsCache = Maps.newConcurrentMap();
 
     @Override
     public void close() throws IOException {
@@ -70,7 +71,7 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
         }
 
         dataSource = (HikariDataSource) this.getDataSourceWithoutCache(timeout);
-        HikariDataSource put = dsCache.put(name, dataSource);
+        HikariDataSource put = dsCache.putIfAbsent(name, dataSource);
         if (put != null) {
             dataSource.close();
             return put;
