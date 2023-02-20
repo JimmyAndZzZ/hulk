@@ -132,6 +132,14 @@ public abstract class BaseData implements Data {
      */
     protected String selectColumnHandler(Wrapper wrapper, String template) {
         Set<String> select = wrapper.getQueryPlus().getSelect();
+        List<AggregateFunction> aggregateFunctions = wrapper.getQueryPlus().getAggregateFunctions();
+
+        if (CollUtil.isNotEmpty(aggregateFunctions)) {
+            for (AggregateFunction aggregateFunction : aggregateFunctions) {
+                select.add(aggregateFunction.getAggregateType().toString().toLowerCase() + "(" + aggregateFunction.getColumn() + ") as " + aggregateFunction.getAlias());
+            }
+        }
+
         return StrUtil.format(template, CollUtil.isNotEmpty(select) ? CollUtil.join(select, ",") : "*");
     }
 

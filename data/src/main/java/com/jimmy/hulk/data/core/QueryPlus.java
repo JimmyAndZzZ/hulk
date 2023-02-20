@@ -23,7 +23,13 @@ public class QueryPlus implements Serializable {
 
     private List<String> groupBy = Lists.newArrayList();
 
-    public QueryPlus addGroup(ConditionTypeEnum conditionTypeEnum, List<Condition> conditions) {
+    private List<AggregateFunction> aggregateFunctions = Lists.newArrayList();
+
+    protected QueryPlus() {
+
+    }
+
+    QueryPlus addGroup(ConditionTypeEnum conditionTypeEnum, List<Condition> conditions) {
         ConditionGroup conditionGroup = new ConditionGroup();
         conditionGroup.setConditions(conditions);
         conditionGroup.setConditionTypeEnum(conditionTypeEnum);
@@ -31,17 +37,22 @@ public class QueryPlus implements Serializable {
         return this;
     }
 
-    public QueryPlus add(Condition condition) {
+    QueryPlus addAggregateFunction(AggregateFunction aggregateFunction) {
+        this.aggregateFunctions.add(aggregateFunction);
+        return this;
+    }
+
+    QueryPlus add(Condition condition) {
         conditions.add(condition);
         return this;
     }
 
-    public QueryPlus addOrder(Order order) {
+    QueryPlus addOrder(Order order) {
         orders.add(order);
         return this;
     }
 
-    public QueryPlus select(String... columns) {
+    QueryPlus select(String... columns) {
         if (ArrayUtil.isNotEmpty(columns)) {
             for (String column : columns) {
                 select.add(column);
@@ -51,7 +62,7 @@ public class QueryPlus implements Serializable {
         return this;
     }
 
-    public QueryPlus groupBy(String... columns) {
+    QueryPlus groupBy(String... columns) {
         if (ArrayUtil.isNotEmpty(columns)) {
             for (String column : columns) {
                 groupBy.add(column);

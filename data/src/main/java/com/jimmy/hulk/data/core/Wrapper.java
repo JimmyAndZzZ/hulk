@@ -1,5 +1,6 @@
 package com.jimmy.hulk.data.core;
 
+import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ConditionEnum;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 
@@ -27,6 +28,24 @@ public class Wrapper implements Serializable {
 
     public Wrapper or() {
         isOr = true;
+        return this;
+    }
+
+    public Wrapper aggregateFunction(AggregateEnum aggregateType, String column) {
+        AggregateFunction aggregateFunction = new AggregateFunction();
+        aggregateFunction.setAggregateType(aggregateType);
+        aggregateFunction.setAlias(aggregateType.toString().toLowerCase() + "(" + column + ")");
+        aggregateFunction.setColumn(column);
+        queryPlus.addAggregateFunction(aggregateFunction);
+        return this;
+    }
+
+    public Wrapper aggregateFunction(AggregateEnum aggregateType, String column, String alias) {
+        AggregateFunction aggregateFunction = new AggregateFunction();
+        aggregateFunction.setAggregateType(aggregateType);
+        aggregateFunction.setAlias(alias);
+        aggregateFunction.setColumn(column);
+        queryPlus.addAggregateFunction(aggregateFunction);
         return this;
     }
 

@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
@@ -41,6 +42,12 @@ import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.*;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.search.suggest.Suggest;
@@ -230,15 +237,7 @@ public class ElasticsearchData extends BaseData {
             searchRequest.source(searchSourceBuilder);
 
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
-            List<Map<String, Object>> result = Lists.newArrayList();
-            SearchHit[] hits = response.getHits().getHits();
-            for (SearchHit hit : hits) {
-                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                sourceAsMap.put("_id", hit.getId());
-                result.add(sourceAsMap);
-            }
-
-            return result;
+            return this.responseHandler(wrapper, response);
         } catch (IOException e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -253,15 +252,7 @@ public class ElasticsearchData extends BaseData {
             searchRequest.source(searchSourceBuilder);
 
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
-            List<Map<String, Object>> result = Lists.newArrayList();
-            SearchHit[] hits = response.getHits().getHits();
-            for (SearchHit hit : hits) {
-                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                sourceAsMap.put("_id", hit.getId());
-                result.add(sourceAsMap);
-            }
-
-            return result;
+            return this.responseHandler(Wrapper.build(), response);
         } catch (IOException e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -290,15 +281,8 @@ public class ElasticsearchData extends BaseData {
             searchRequest.source(searchSourceBuilder);
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
 
-            List<Map<String, Object>> result = Lists.newArrayList();
-            SearchHit[] hits = response.getHits().getHits();
-            for (SearchHit hit : hits) {
-                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                sourceAsMap.put("_id", hit.getId());
-                result.add(sourceAsMap);
-            }
-
-            return result.get(0);
+            List<Map<String, Object>> maps = this.responseHandler(wrapper, response);
+            return CollUtil.isEmpty(maps) ? null : maps.stream().findFirst().get();
         } catch (IOException e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -339,14 +323,7 @@ public class ElasticsearchData extends BaseData {
             searchRequest.source(searchSourceBuilder);
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
 
-            List<Map<String, Object>> result = Lists.newArrayList();
-            SearchHit[] hits = response.getHits().getHits();
-            for (SearchHit hit : hits) {
-                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                sourceAsMap.put("_id", hit.getId());
-                result.add(sourceAsMap);
-            }
-            return result;
+            return this.responseHandler(wrapper, response);
         } catch (IOException e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -383,16 +360,8 @@ public class ElasticsearchData extends BaseData {
             searchRequest.source(searchSourceBuilder);
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
 
-            List<Map<String, Object>> result = Lists.newArrayList();
-            SearchHit[] hits = response.getHits().getHits();
-            for (SearchHit hit : hits) {
-                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                sourceAsMap.put("_id", hit.getId());
-                result.add(sourceAsMap);
-            }
-
             pageResult.setTotal(cs);
-            pageResult.setRecords(result);
+            pageResult.setRecords(this.responseHandler(wrapper, response));
             return pageResult;
         } catch (IOException e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
@@ -411,15 +380,7 @@ public class ElasticsearchData extends BaseData {
             searchRequest.source(searchSourceBuilder);
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
 
-            List<Map<String, Object>> result = Lists.newArrayList();
-            SearchHit[] hits = response.getHits().getHits();
-            for (SearchHit hit : hits) {
-                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                sourceAsMap.put("_id", hit.getId());
-                result.add(sourceAsMap);
-            }
-
-            return result;
+            return this.responseHandler(wrapper, response);
         } catch (IOException e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -466,6 +427,65 @@ public class ElasticsearchData extends BaseData {
     }
 
     /**
+     * 返回处理
+     *
+     * @param wrapper
+     * @param response
+     * @return
+     */
+    private List<Map<String, Object>> responseHandler(Wrapper wrapper, SearchResponse response) {
+        QueryPlus queryPlus = wrapper.getQueryPlus();
+        List<String> groupBy = queryPlus.getGroupBy();
+        List<AggregateFunction> aggregateFunctions = queryPlus.getAggregateFunctions();
+        //普通查询
+        if (CollUtil.isEmpty(groupBy) && CollUtil.isEmpty(aggregateFunctions)) {
+            List<Map<String, Object>> result = Lists.newArrayList();
+            SearchHit[] hits = response.getHits().getHits();
+            for (SearchHit hit : hits) {
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                sourceAsMap.put("_id", hit.getId());
+                result.add(sourceAsMap);
+            }
+        }
+        //单独的聚合查询
+        if (CollUtil.isNotEmpty(aggregateFunctions) && CollUtil.isEmpty(groupBy)) {
+            Aggregations aggregations = response.getAggregations();
+            Map<String, Object> sourceAsMap = Maps.newHashMap();
+
+            for (AggregateFunction aggregateFunction : aggregateFunctions) {
+                switch (aggregateFunction.getAggregateType()) {
+                    case COUNT:
+                        ValueCount count = aggregations.get(aggregateFunction.getAlias());
+                        sourceAsMap.put(aggregateFunction.getAlias(), count.getValue());
+                        break;
+                    case MAX:
+                        Max max = aggregations.get(aggregateFunction.getAlias());
+                        sourceAsMap.put(aggregateFunction.getAlias(), max.getValueAsString());
+                        break;
+                    case MIN:
+                        Min min = aggregations.get(aggregateFunction.getAlias());
+                        sourceAsMap.put(aggregateFunction.getAlias(), min.getValueAsString());
+                        break;
+                    case AVG:
+                        Avg avg = aggregations.get(aggregateFunction.getAlias());
+                        sourceAsMap.put(aggregateFunction.getAlias(), avg.getValueAsString());
+                        break;
+                    case SUM:
+                        Sum sum = aggregations.get(aggregateFunction.getAlias());
+                        sourceAsMap.put(aggregateFunction.getAlias(), sum.getValueAsString());
+                        break;
+                }
+            }
+
+            return Lists.newArrayList(sourceAsMap);
+        }
+
+
+
+        return Lists.newArrayList();
+    }
+
+    /**
      * 条件翻译
      *
      * @param plus
@@ -477,6 +497,7 @@ public class ElasticsearchData extends BaseData {
         //and条件处理
         List<String> groupBy = plus.getGroupBy();
         List<Condition> conditions = plus.getConditions();
+        List<AggregateFunction> aggregateFunctions = plus.getAggregateFunctions();
         if (CollUtil.isNotEmpty(conditions)) {
             for (Condition condition : conditions) {
                 QueryBuilder queryBuilder = (QueryBuilder) this.conditionParse.parse(condition, null);
@@ -517,6 +538,29 @@ public class ElasticsearchData extends BaseData {
                 }
             }
         }
+        //groupby 处理
+        if (CollUtil.isNotEmpty(groupBy)) {
+            for (String s : groupBy) {
+                TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(s + "Group").field(s);
+                searchSourceBuilder.aggregation(aggregationBuilder);
+
+                if (CollUtil.isNotEmpty(aggregateFunctions)) {
+                    for (AggregateFunction aggregateFunction : aggregateFunctions) {
+                        aggregationBuilder.subAggregation(this.aggregationBuilder(aggregateFunction));
+                    }
+                }
+            }
+            // 如果只想返回聚合统计结果，不想返回查询结果可以将分页大小设置为0
+            searchSourceBuilder.size(0);
+        }
+        //聚合函数处理
+        if (CollUtil.isNotEmpty(aggregateFunctions) && CollUtil.isEmpty(groupBy)) {
+            for (AggregateFunction aggregateFunction : aggregateFunctions) {
+                searchSourceBuilder.aggregation(this.aggregationBuilder(aggregateFunction));
+            }
+            // 如果只想返回聚合统计结果，不想返回查询结果可以将分页大小设置为0
+            searchSourceBuilder.size(0);
+        }
 
         if (isOrder) {
             //排序
@@ -535,6 +579,32 @@ public class ElasticsearchData extends BaseData {
         }
 
         return searchSourceBuilder;
+    }
+
+    /**
+     * 聚合构建
+     *
+     * @param aggregateFunction
+     * @return
+     */
+    private AggregationBuilder aggregationBuilder(AggregateFunction aggregateFunction) {
+        String alias = aggregateFunction.getAlias();
+        String column = aggregateFunction.getColumn();
+        AggregateEnum aggregateType = aggregateFunction.getAggregateType();
+        switch (aggregateType) {
+            case MAX:
+                return AggregationBuilders.max(alias).field(column);
+            case COUNT:
+                return AggregationBuilders.count(alias).field("_id");
+            case MIN:
+                return AggregationBuilders.min(alias).field(column);
+            case AVG:
+                return AggregationBuilders.avg(alias).field(column);
+            case SUM:
+                return AggregationBuilders.sum(alias).field(column);
+        }
+
+        throw new HulkException("es目前不支持该聚合计算", ModuleEnum.DATA);
     }
 
     /**
