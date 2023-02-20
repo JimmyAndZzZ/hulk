@@ -46,6 +46,7 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.*;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -453,36 +454,61 @@ public class ElasticsearchData extends BaseData {
             Map<String, Object> sourceAsMap = Maps.newHashMap();
 
             for (AggregateFunction aggregateFunction : aggregateFunctions) {
-                switch (aggregateFunction.getAggregateType()) {
-                    case COUNT:
-                        ValueCount count = aggregations.get(aggregateFunction.getAlias());
-                        sourceAsMap.put(aggregateFunction.getAlias(), count.getValue());
-                        break;
-                    case MAX:
-                        Max max = aggregations.get(aggregateFunction.getAlias());
-                        sourceAsMap.put(aggregateFunction.getAlias(), max.getValueAsString());
-                        break;
-                    case MIN:
-                        Min min = aggregations.get(aggregateFunction.getAlias());
-                        sourceAsMap.put(aggregateFunction.getAlias(), min.getValueAsString());
-                        break;
-                    case AVG:
-                        Avg avg = aggregations.get(aggregateFunction.getAlias());
-                        sourceAsMap.put(aggregateFunction.getAlias(), avg.getValueAsString());
-                        break;
-                    case SUM:
-                        Sum sum = aggregations.get(aggregateFunction.getAlias());
-                        sourceAsMap.put(aggregateFunction.getAlias(), sum.getValueAsString());
-                        break;
-                }
+                sourceAsMap.put(aggregateFunction.getAlias(), this.getAggregateFunctionResult(aggregateFunction, aggregations));
             }
 
             return Lists.newArrayList(sourceAsMap);
         }
 
+        List<Map<String, Object>> result = Lists.newArrayList();
+        //group by后的聚合
+        for (String s : groupBy) {
+            Aggregations aggregations = response.getAggregations();
+            Terms groupAggregation = aggregations.get(s + "Group");
+            // 遍历terms聚合结果
+            for (Terms.Bucket bucket : groupAggregation.getBuckets()) {
+                Map<String, Object> sourceAsMap = Maps.newHashMap();
+
+                sourceAsMap.put(s, bucket.getKey());
+                for (AggregateFunction aggregateFunction : aggregateFunctions) {
+                    sourceAsMap.put(aggregateFunction.getAlias(), this.getAggregateFunctionResult(aggregateFunction, bucket.getAggregations()));
+                }
+
+                result.add(sourceAsMap);
+            }
+        }
 
 
-        return Lists.newArrayList();
+        return result;
+    }
+
+    /**
+     * 获取聚合函数结果
+     *
+     * @param aggregateFunction
+     * @param aggregations
+     * @return
+     */
+    private Object getAggregateFunctionResult(AggregateFunction aggregateFunction, Aggregations aggregations) {
+        switch (aggregateFunction.getAggregateType()) {
+            case COUNT:
+                ValueCount count = aggregations.get(aggregateFunction.getAlias());
+                return count.getValue();
+            case MAX:
+                Max max = aggregations.get(aggregateFunction.getAlias());
+                return max.getValueAsString();
+            case MIN:
+                Min min = aggregations.get(aggregateFunction.getAlias());
+                return min.getValueAsString();
+            case AVG:
+                Avg avg = aggregations.get(aggregateFunction.getAlias());
+                return avg.getValueAsString();
+            case SUM:
+                Sum sum = aggregations.get(aggregateFunction.getAlias());
+                return sum.getValueAsString();
+        }
+
+        return null;
     }
 
     /**
@@ -540,6 +566,10 @@ public class ElasticsearchData extends BaseData {
         }
         //groupby 处理
         if (CollUtil.isNotEmpty(groupBy)) {
+            if (groupBy.size() > 1) {
+                throw new HulkException("当前group by只支持一个字段", ModuleEnum.DATA);
+            }
+
             for (String s : groupBy) {
                 TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(s + "Group").field(s);
                 searchSourceBuilder.aggregation(aggregationBuilder);
