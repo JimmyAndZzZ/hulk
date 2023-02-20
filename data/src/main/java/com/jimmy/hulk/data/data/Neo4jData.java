@@ -3,6 +3,7 @@ package com.jimmy.hulk.data.data;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
+import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.annotation.DS;
@@ -100,7 +101,7 @@ public class Neo4jData extends BaseData {
 
             StringBuilder sb = new StringBuilder("MATCH (n: ").append(indexName).append(") ");
             sb.append(this.conditionTrans(wrapper.getQueryPlus()).getConditionExp());
-            sb.append(" return n ");
+            sb.append(this.aggregateHandler(wrapper));
 
             String orderTrans = this.orderTrans(wrapper.getQueryPlus());
             if (StrUtil.isNotEmpty(orderTrans)) {
@@ -147,7 +148,7 @@ public class Neo4jData extends BaseData {
 
             StringBuilder sb = new StringBuilder("MATCH (n: ").append(indexName).append(") ");
             sb.append(this.conditionTrans(wrapper.getQueryPlus()).getConditionExp());
-            sb.append(" return n ");
+            sb.append(this.aggregateHandler(wrapper));
 
             String orderTrans = this.orderTrans(wrapper.getQueryPlus());
             if (StrUtil.isNotEmpty(orderTrans)) {
@@ -277,7 +278,7 @@ public class Neo4jData extends BaseData {
 
             StringBuilder sb = new StringBuilder("MATCH (n: ").append(indexName).append(") ");
             sb.append(this.conditionTrans(wrapper.getQueryPlus()).getConditionExp());
-            sb.append(" return n ");
+            sb.append(this.aggregateHandler(wrapper));
 
             String orderTrans = this.orderTrans(wrapper.getQueryPlus());
             if (StrUtil.isNotEmpty(orderTrans)) {
@@ -328,7 +329,7 @@ public class Neo4jData extends BaseData {
 
             StringBuilder sb = new StringBuilder("MATCH (n: ").append(indexName).append(") ");
             sb.append(this.conditionTrans(wrapper.getQueryPlus()).getConditionExp());
-            sb.append(" return n ");
+            sb.append(this.aggregateHandler(wrapper));
 
             String orderTrans = this.orderTrans(wrapper.getQueryPlus());
             if (StrUtil.isNotEmpty(orderTrans)) {
@@ -354,6 +355,48 @@ public class Neo4jData extends BaseData {
     @Override
     public boolean queryIsExist(Wrapper wrapper) {
         return this.count(wrapper) > 0;
+    }
+
+    /**
+     * 聚合处理
+     *
+     * @param wrapper
+     * @return
+     */
+    private String aggregateHandler(Wrapper wrapper) {
+        QueryPlus queryPlus = wrapper.getQueryPlus();
+        List<String> groupBy = queryPlus.getGroupBy();
+        List<AggregateFunction> aggregateFunctions = queryPlus.getAggregateFunctions();
+        if (CollUtil.isEmpty(groupBy) && CollUtil.isEmpty(aggregateFunctions)) {
+            return " return n ";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (CollUtil.isNotEmpty(groupBy)) {
+            sb.append(CollUtil.join(groupBy, ",")).append(StrUtil.SPACE);
+        }
+
+        if (CollUtil.isNotEmpty(aggregateFunctions)) {
+            if (StrUtil.isNotBlank(sb)) {
+                sb.append(",");
+            }
+
+            for (int i = 0; i < aggregateFunctions.size(); i++) {
+                if (i > 0) {
+                    sb.append(",");
+                }
+
+                AggregateFunction aggregateFunction = aggregateFunctions.get(i);
+                if (aggregateFunction.getAggregateType().equals(AggregateEnum.COUNT)) {
+                    sb.append("count(*)");
+                    if (aggregateFunction.getIsIncludeAlias()) {
+                        sb.append(" as ").append(aggregateFunction.getAlias());
+                    }
+                }
+            }
+        }
+
+        return " return " + sb;
     }
 
     /**

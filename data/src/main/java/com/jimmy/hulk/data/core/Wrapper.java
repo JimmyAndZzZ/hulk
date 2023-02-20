@@ -45,6 +45,7 @@ public class Wrapper implements Serializable {
         aggregateFunction.setAggregateType(aggregateType);
         aggregateFunction.setAlias(alias);
         aggregateFunction.setColumn(column);
+        aggregateFunction.setIsIncludeAlias(true);
         queryPlus.addAggregateFunction(aggregateFunction);
         return this;
     }

@@ -13,4 +13,6 @@ public class AggregateFunction implements Serializable {
     private String column;
 
     private String alias;
+
+    private Boolean isIncludeAlias = false;
 }
