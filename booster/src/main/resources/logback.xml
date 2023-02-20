@@ -7,7 +7,7 @@
     <conversionRule conversionWord="wEx"
                     converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
 
-    <property name="application_name" value="qq-agent"/>
+    <property name="application_name" value="hulk"/>
     <property name="all_file_name" value="../logs/%d{yyyy-MM-dd}/${application_name}.%d{yyyy-MM-dd}.%i.log"/>
     <property name="max_history" value="60"/>
     <!-- 彩色日志格式 -->
