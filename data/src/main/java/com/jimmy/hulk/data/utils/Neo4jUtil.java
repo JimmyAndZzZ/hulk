@@ -1,7 +1,10 @@
 package com.jimmy.hulk.data.utils;
 
+import cn.hutool.core.collection.CollUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.jimmy.hulk.data.core.AggregateFunction;
+import com.jimmy.hulk.data.core.Wrapper;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.NodeValue;
@@ -19,10 +22,17 @@ public class Neo4jUtil {
      * @param records
      * @return
      */
-    public static List<Map<String, Object>> recordAsMaps(List<Record> records) {
+    public static List<Map<String, Object>> recordAsMaps(List<Record> records, Wrapper wrapper) {
+        List<String> groupBy = wrapper.getQueryPlus().getGroupBy();
+        List<AggregateFunction> aggregateFunctions = wrapper.getQueryPlus().getAggregateFunctions();
         List<Map<String, Object>> result = Lists.newArrayList();
 
         for (Record record : records) {
+            if (CollUtil.isNotEmpty(groupBy) || CollUtil.isNotEmpty(aggregateFunctions)) {
+                result.add(record.asMap());
+                continue;
+            }
+
             int size = record.size();
             for (int i = 0; i < size; i++) {
                 result.add(nodeAsMap(record.get(i)));
@@ -31,7 +41,6 @@ public class Neo4jUtil {
 
         return result;
     }
-
 
     /**
      * 单个Record转换

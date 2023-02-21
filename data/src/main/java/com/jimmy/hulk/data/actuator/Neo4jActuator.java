@@ -12,6 +12,7 @@ import com.jimmy.hulk.data.config.DataSourceProperty;
 import com.jimmy.hulk.common.core.Column;
 import com.jimmy.hulk.data.core.Page;
 import com.jimmy.hulk.common.core.Table;
+import com.jimmy.hulk.data.core.Wrapper;
 import com.jimmy.hulk.data.utils.Neo4jUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.*;
@@ -114,7 +115,7 @@ public class Neo4jActuator extends Actuator<String> {
             }
 
             List<Record> records = run.list();
-            List<Map<String, Object>> resultList = Neo4jUtil.recordAsMaps(records);
+            List<Map<String, Object>> resultList = Neo4jUtil.recordAsMaps(records, Wrapper.build());
             if (CollUtil.isEmpty(resultList)) {
                 return Lists.newArrayList();
             }
@@ -202,7 +203,7 @@ public class Neo4jActuator extends Actuator<String> {
             }
 
             List<Record> records = run.list();
-            List<Map<String, Object>> resultList = Neo4jUtil.recordAsMaps(records);
+            List<Map<String, Object>> resultList = Neo4jUtil.recordAsMaps(records, Wrapper.build());
             result.setTotal(resultList != null ? resultList.size() : 0L);
 
             if (CollUtil.isNotEmpty(resultList)) {
@@ -230,7 +231,7 @@ public class Neo4jActuator extends Actuator<String> {
             }
 
             List<Record> records = run.list();
-            return Neo4jUtil.recordAsMaps(records);
+            return Neo4jUtil.recordAsMaps(records, Wrapper.build());
         } catch (Exception e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -246,7 +247,7 @@ public class Neo4jActuator extends Actuator<String> {
             }
 
             List<Record> records = run.list();
-            List<Map<String, Object>> resultList = Neo4jUtil.recordAsMaps(records);
+            List<Map<String, Object>> resultList = Neo4jUtil.recordAsMaps(records, Wrapper.build());
             if (CollUtil.isNotEmpty(resultList)) {
                 int start = page.getPageNo() * page.getPageSize();
                 int end = (page.getPageNo() + 1) * page.getPageSize() - 1;

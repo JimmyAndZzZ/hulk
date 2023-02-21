@@ -1,5 +1,7 @@
 package com.jimmy.hulk.data.utils;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.ConditionEnum;
@@ -7,6 +9,7 @@ import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 
 public class ConditionUtil {
@@ -18,6 +21,10 @@ public class ConditionUtil {
     public static String valueHandler(Object id) {
         if (id instanceof Number) {
             return id.toString();
+        }
+
+        if (id instanceof Date) {
+            return DateUtil.format((Date) id, DatePattern.NORM_DATETIME_PATTERN);
         }
 
         return new StringBuilder("'").append(id.toString()).append("'").toString();

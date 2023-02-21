@@ -186,7 +186,7 @@ public abstract class BaseData implements Data {
             }
         }
         //groupby 处理
-        if (CollUtil.isNotEmpty(groupBy)) {
+        if (CollUtil.isNotEmpty(groupBy) && !this.type().equals(DatasourceEnum.NEO4J)) {
             sb.append(StrUtil.CRLF).append(StrUtil.SPACE).append("group by ").append(CollUtil.join(groupBy, ",")).append(StrUtil.SPACE).append(StrUtil.CRLF);
         }
 

@@ -10,6 +10,7 @@ import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.condition.Neo4jCondition;
 import com.jimmy.hulk.data.core.*;
 import com.jimmy.hulk.data.transaction.TransactionManager;
+import com.jimmy.hulk.data.utils.ConditionUtil;
 import com.jimmy.hulk.data.utils.Neo4jUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.*;
@@ -44,7 +45,7 @@ public class Neo4jData extends BaseData {
             List<String> list = Lists.newArrayList();
             for (Map.Entry<String, Object> entry : doc.entrySet()) {
                 Object value = entry.getValue();
-                list.add(entry.getKey() + ":'" + (value != null ? value : "null") + "'");
+                list.add(entry.getKey() + ":" + this.valueHandler(entry.getValue()));
             }
 
             return StrUtil.format(INSERT_SQL_FORMAT, indexName, CollUtil.join(list, ","));
@@ -62,7 +63,7 @@ public class Neo4jData extends BaseData {
             List<String> list = Lists.newArrayList();
             for (Map.Entry<String, Object> entry : doc.entrySet()) {
                 Object value = entry.getValue();
-                list.add(entry.getKey() + ":'" + (value != null ? value : "null") + "'");
+                list.add(entry.getKey() + ":" + this.valueHandler(entry.getValue()));
             }
 
             sb.append(" set x={").append(CollUtil.join(list, ",")).append("}");
@@ -85,7 +86,7 @@ public class Neo4jData extends BaseData {
             List<String> list = Lists.newArrayList();
             for (Map.Entry<String, Object> entry : doc.entrySet()) {
                 Object value = entry.getValue();
-                list.add(entry.getKey() + ":'" + (value != null ? value : "null") + "'");
+                list.add(entry.getKey() + ":" + this.valueHandler(entry.getValue()));
             }
 
             sb.append(" set x={").append(CollUtil.join(list, ",")).append("}");
@@ -119,7 +120,7 @@ public class Neo4jData extends BaseData {
             }
 
             List<Record> records = run.list();
-            return CollUtil.isNotEmpty(records) ? Neo4jUtil.recordAsMaps(records) : Lists.newArrayList();
+            return CollUtil.isNotEmpty(records) ? Neo4jUtil.recordAsMaps(records, wrapper) : Lists.newArrayList();
         } catch (Exception e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -166,7 +167,7 @@ public class Neo4jData extends BaseData {
             }
 
             List<Record> records = run.list();
-            return CollUtil.isNotEmpty(records) ? Neo4jUtil.recordAsMaps(records) : Lists.newArrayList();
+            return CollUtil.isNotEmpty(records) ? Neo4jUtil.recordAsMaps(records, wrapper) : Lists.newArrayList();
         } catch (Exception e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -230,7 +231,7 @@ public class Neo4jData extends BaseData {
     public int add(Map<String, Object> doc, Serializable id) {
         List<String> list = Lists.newArrayList();
         for (Map.Entry<String, Object> entry : doc.entrySet()) {
-            list.add(entry.getKey() + ":'" + entry.getValue() + "'");
+            list.add(entry.getKey() + ":" + this.valueHandler(entry.getValue()));
         }
 
         if (id != null) {
@@ -258,8 +259,7 @@ public class Neo4jData extends BaseData {
 
         List<String> list = Lists.newArrayList();
         for (Map.Entry<String, Object> entry : doc.entrySet()) {
-            Object value = entry.getValue();
-            list.add(entry.getKey() + ":'" + (value != null ? value : "null") + "'");
+            list.add(entry.getKey() + ":" + this.valueHandler(entry.getValue()));
         }
 
         sb.append(" set n={").append(CollUtil.join(list, ",")).append("}");
@@ -294,7 +294,7 @@ public class Neo4jData extends BaseData {
             }
 
             List<Record> records = run.list();
-            return CollUtil.isNotEmpty(records) ? Neo4jUtil.recordAsMaps(records) : Lists.newArrayList();
+            return CollUtil.isNotEmpty(records) ? Neo4jUtil.recordAsMaps(records, wrapper) : Lists.newArrayList();
         } catch (Exception e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -316,7 +316,7 @@ public class Neo4jData extends BaseData {
             }
 
             List<Record> records = run.list();
-            return CollUtil.isNotEmpty(records) ? Neo4jUtil.recordAsMaps(records) : Lists.newArrayList();
+            return CollUtil.isNotEmpty(records) ? Neo4jUtil.recordAsMaps(records, Wrapper.build()) : Lists.newArrayList();
         } catch (Exception e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
@@ -346,6 +346,13 @@ public class Neo4jData extends BaseData {
             }
 
             Record single = run.single();
+
+            List<String> groupBy = wrapper.getQueryPlus().getGroupBy();
+            List<AggregateFunction> aggregateFunctions = wrapper.getQueryPlus().getAggregateFunctions();
+            if (CollUtil.isNotEmpty(groupBy) || CollUtil.isNotEmpty(aggregateFunctions)) {
+                return single.asMap();
+            }
+
             return single != null ? Neo4jUtil.recordAsMap(single) : null;
         } catch (Exception e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
@@ -355,6 +362,20 @@ public class Neo4jData extends BaseData {
     @Override
     public boolean queryIsExist(Wrapper wrapper) {
         return this.count(wrapper) > 0;
+    }
+
+    /**
+     * 值处理
+     *
+     * @param value
+     * @return
+     */
+    private String valueHandler(Object value) {
+        if (value == null) {
+            return "null";
+        }
+
+        return ConditionUtil.valueHandler(value);
     }
 
     /**
@@ -373,7 +394,7 @@ public class Neo4jData extends BaseData {
 
         StringBuilder sb = new StringBuilder();
         if (CollUtil.isNotEmpty(groupBy)) {
-            sb.append(CollUtil.join(groupBy, ",")).append(StrUtil.SPACE);
+            sb.append(CollUtil.join(groupBy, ",", "n.", StrUtil.EMPTY)).append(StrUtil.SPACE);
         }
 
         if (CollUtil.isNotEmpty(aggregateFunctions)) {
@@ -387,12 +408,19 @@ public class Neo4jData extends BaseData {
                 }
 
                 AggregateFunction aggregateFunction = aggregateFunctions.get(i);
-                if (aggregateFunction.getAggregateType().equals(AggregateEnum.COUNT)) {
+                AggregateEnum aggregateType = aggregateFunction.getAggregateType();
+
+                if (aggregateType.equals(AggregateEnum.COUNT)) {
                     sb.append("count(*)");
                     if (aggregateFunction.getIsIncludeAlias()) {
                         sb.append(" as ").append(aggregateFunction.getAlias());
                     }
+
+                    continue;
                 }
+
+                sb.append(aggregateType.toString().toLowerCase() + "(n." + aggregateFunction.getColumn() + ")");
+                sb.append(" as ").append(aggregateFunction.getAlias());
             }
         }
 
