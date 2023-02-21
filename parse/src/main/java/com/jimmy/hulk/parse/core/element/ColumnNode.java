@@ -35,6 +35,8 @@ public class ColumnNode implements Serializable {
 
     private Boolean isFill = false;
 
+    private Boolean isDbFunction = true;
+
     private List<ColumnNode> functionParam = Lists.newArrayList();
 
     private ColumnTypeEnum type = ColumnTypeEnum.FIELD;

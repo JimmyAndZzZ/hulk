@@ -215,12 +215,10 @@ abstract class SQL<T> implements Operate {
         if (CollUtil.isNotEmpty(collect)) {
             for (ColumnNode columnNode : collect) {
                 String function = columnNode.getFunction();
-                if (!AviatorEvaluator.containsFunction(function)) {
-                    return true;
+                if (AviatorEvaluator.containsFunction(function)) {
+                    return false;
                 }
             }
-
-            return false;
         }
 
         return true;

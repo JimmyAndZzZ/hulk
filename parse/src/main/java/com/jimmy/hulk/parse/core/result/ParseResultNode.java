@@ -33,6 +33,8 @@ public class ParseResultNode implements Serializable {
 
     private List<PrepareParamNode> prepareParamNodes = Lists.newArrayList();
 
+    private List<ColumnNode> groupBy = Lists.newArrayList();
+
     public ParseResultNode() {
         this.setResultType(ResultTypeEnum.SELECT);
     }

@@ -8,17 +8,17 @@ import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.*;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.parse.core.element.*;
-import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import com.jimmy.hulk.parse.core.result.ExtraNode;
+import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import com.jimmy.hulk.parse.enums.ResultTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.jimmy.sql.parser.impl.SqlJobParserImpl;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlMonotonicBinaryOperator;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
-import org.apache.calcite.jimmy.sql.parser.impl.SqlJobParserImpl;
 import org.apache.calcite.util.NlsString;
 
 import java.math.BigDecimal;
@@ -328,6 +328,13 @@ public class SQLParser {
         SqlNode where = sqlSelect.getWhere();
         if (where != null) {
             this.parseWhereNode(null, where, parseResultNode, null);
+        }
+        //group by解析
+        SqlNodeList group = sqlSelect.getGroup();
+        if (CollUtil.isNotEmpty(group)) {
+            for (SqlNode sqlNode : group) {
+                parseResultNode.getGroupBy().add(this.parseColumnNode(sqlNode));
+            }
         }
 
         return parseResultNode;

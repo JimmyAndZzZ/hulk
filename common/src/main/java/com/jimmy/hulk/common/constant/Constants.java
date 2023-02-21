@@ -18,6 +18,8 @@ public interface Constants {
 
             String WHERE_COLUMNS_KEY = "where:columns:";
 
+            String GROUP_BY_COLUMNS_KEY = "group:by:columns:";
+
             String ORDER_COLUMNS_KEY = "order:columns:";
 
             String SELECT_NODE_KEY = "select:node";

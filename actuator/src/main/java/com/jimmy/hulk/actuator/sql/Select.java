@@ -64,6 +64,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             boolean isOnlyAggregate = columns.size() == 1 && aggregateNode.getAggregateEnum() != null;
             //数据源刷新
             this.dsMatch(tableNodes);
+            this.functionFilter(columns);
             //单一数据源则考虑是否用原生SQL方式执行
             Set<String> dsNames = tableNodes.stream().map(TableNode::getDsName).collect(Collectors.toSet());
             if (this.isExecuteBySQL(parseResultNode)) {
@@ -90,23 +91,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //单表查询
             int size = tableNodes.size();
             if (size == 1) {
-                //只查询count
-                if (isOnlyAggregate && aggregateNode.getAggregateEnum().equals(AggregateEnum.COUNT)) {
-                    int count = this.singerTableCount(parseResultNode);
-
-                    Map<String, Object> data = Maps.newHashMap();
-                    data.put(aggregateNode.getAlias(), count);
-                    return Lists.newArrayList(data);
-                }
-
                 List<Row> query = this.singerTableQuery(parseResultNode);
-                //只处理聚合函数
-                if (isOnlyAggregate) {
-                    //创建文件
-                    aggregateNode.setTableNode(tableNodes.stream().findFirst().get());
-                    return this.onlyAggregate(aggregateNode, query);
-                }
-
                 return this.dataMerge(query);
             }
 
@@ -156,6 +141,22 @@ public class Select extends SQL<List<Map<String, Object>>> {
         }
 
         return false;
+    }
+
+    /**
+     * 函数过滤
+     *
+     * @param columns
+     */
+    private void functionFilter(List<ColumnNode> columns) {
+        if (CollUtil.isNotEmpty(columns)) {
+            for (ColumnNode columnNode : columns) {
+                String function = columnNode.getFunction();
+                if (columnNode.getType().equals(ColumnTypeEnum.FUNCTION) && AviatorEvaluator.containsFunction(function)) {
+                    columnNode.setIsDbFunction(false);
+                }
+            }
+        }
     }
 
     /**
@@ -305,6 +306,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
         List<OrderNode> orderNodes = parseResultNode.getOrderNodes();
         //获取查询字段列表
         List<ColumnNode> columns = parseResultNode.getColumns();
+        List<ColumnNode> groupBy = parseResultNode.getGroupBy();
         //判断是否查询全字段
         boolean isAllFields = columns.size() == 1 && columns.stream().findFirst().get().getName().equals(Constants.Actuator.ALL_COLUMN);
         //获取主表
@@ -327,8 +329,26 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //字段查询过滤
             if (!isAllFields) {
                 for (ColumnNode column : columns) {
-                    if (column.getType().equals(ColumnTypeEnum.FIELD)) {
+                    ColumnTypeEnum type = column.getType();
+
+                    if (type.equals(ColumnTypeEnum.FIELD)) {
                         wrapper.select(column.getName());
+                    }
+
+                    if (type.equals(ColumnTypeEnum.AGGREGATE)) {
+                        Boolean isContainsAlias = column.getIsContainsAlias();
+                        AggregateEnum aggregateEnum = column.getAggregateEnum();
+                        String name = aggregateEnum.equals(AggregateEnum.COUNT) ? "1" : column.getFunctionParam().stream().findFirst().get().getName();
+
+                        if (isContainsAlias) {
+                            wrapper.aggregateFunction(aggregateEnum, name, column.getAlias());
+                        } else {
+                            wrapper.aggregateFunction(aggregateEnum, name);
+                        }
+                    }
+
+                    if (type.equals(ColumnTypeEnum.FUNCTION) && column.getIsDbFunction()) {
+                        wrapper.select(column.getName() + " as " + column.getAlias());
                     }
                 }
             }
@@ -339,6 +359,12 @@ public class Select extends SQL<List<Map<String, Object>>> {
                     order.setFieldName(orderNode.getColumnNode().getAlias());
                     order.setIsDesc(orderNode.getIsDesc());
                     wrapper.addOrder(order);
+                }
+            }
+            //group by
+            if (CollUtil.isNotEmpty(groupBy)) {
+                for (ColumnNode columnNode : groupBy) {
+                    wrapper.groupBy(columnNode.getName());
                 }
             }
             //查询数据
@@ -355,6 +381,12 @@ public class Select extends SQL<List<Map<String, Object>>> {
             int pageNo = 0;
 
             Wrapper build = Wrapper.build();
+            //字段查询过滤
+            for (ColumnNode column : columns) {
+                if (column.getType().equals(ColumnTypeEnum.FUNCTION) && column.getIsDbFunction()) {
+                    wrapper.select(column.getName() + " as " + column.getAlias());
+                }
+            }
             //排序
             if (CollUtil.isNotEmpty(orderNodes)) {
                 for (OrderNode orderNode : orderNodes) {
@@ -401,7 +433,6 @@ public class Select extends SQL<List<Map<String, Object>>> {
 
         return rows;
     }
-
 
     /**
      * 获取where条件过滤表达式
@@ -681,6 +712,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             selectColumns.addAll(this.getOrderColumns(tableNode));
             selectColumns.addAll(this.getWhereColumns(tableNode));
             selectColumns.addAll(this.getCalculateNeedColumns(tableNode));
+            selectColumns.addAll(this.getGroupByColumns(tableNode));
             wrapper.select(ArrayUtil.toArray(selectColumns, String.class));
         }
     }
@@ -779,6 +811,32 @@ public class Select extends SQL<List<Map<String, Object>>> {
         }
 
         ExecuteHolder.set(Constants.Actuator.CacheKey.CALCULATE_COLUMNS_KEY + tableNode.getUuid(), columnNames);
+        return columnNames;
+    }
+
+    /**
+     * 获取groupby字段列表
+     *
+     * @param tableNode
+     * @return
+     */
+    private List<String> getGroupByColumns(TableNode tableNode) {
+        ParseResultNode parseResultNode = ExecuteHolder.get(Constants.Actuator.CacheKey.SELECT_NODE_KEY, ParseResultNode.class);
+        if (ExecuteHolder.contain(Constants.Actuator.CacheKey.GROUP_BY_COLUMNS_KEY + tableNode.getUuid())) {
+            return ExecuteHolder.get(Constants.Actuator.CacheKey.GROUP_BY_COLUMNS_KEY + tableNode.getUuid(), List.class);
+        }
+
+        List<String> columnNames = Lists.newArrayList();
+        List<ColumnNode> groupBy = parseResultNode.getGroupBy();
+        if (CollUtil.isNotEmpty(groupBy)) {
+            for (ColumnNode columnNode : groupBy) {
+                if (this.matchTableColumns(tableNode, columnNode)) {
+                    columnNames.add(columnNode.getName());
+                }
+            }
+        }
+
+        ExecuteHolder.set(Constants.Actuator.CacheKey.GROUP_BY_COLUMNS_KEY + tableNode.getUuid(), columnNames);
         return columnNames;
     }
 
@@ -1154,7 +1212,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
      * @param rows
      * @return
      */
-    private List<Map<String, Object>> dataMerge(List<Row> rows) {
+    private List<Map<String, Object>> dataMerge(List<Row> rows,) {
         if (CollUtil.isEmpty(rows)) {
             return Lists.newArrayList();
         }
@@ -1188,6 +1246,10 @@ public class Select extends SQL<List<Map<String, Object>>> {
         Map<ColumnNode, Expression> functionExp = Maps.newHashMap();
         if (CollUtil.isNotEmpty(functionColumns)) {
             for (ColumnNode functionColumn : functionColumns) {
+                if (functionColumn.getIsDbFunction()) {
+                    continue;
+                }
+
                 functionExp.put(functionColumn, this.getFunctionExp(functionColumn));
             }
         }

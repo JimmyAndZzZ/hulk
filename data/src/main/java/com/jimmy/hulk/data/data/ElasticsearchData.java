@@ -447,6 +447,8 @@ public class ElasticsearchData extends BaseData {
                 sourceAsMap.put("_id", hit.getId());
                 result.add(sourceAsMap);
             }
+
+            return result;
         }
         //单独的聚合查询
         if (CollUtil.isNotEmpty(aggregateFunctions) && CollUtil.isEmpty(groupBy)) {
