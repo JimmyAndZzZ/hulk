@@ -172,7 +172,7 @@ abstract class SQL<T> implements Operate {
                         stringBuilder.append(columnNode.getTableNode().getAlias()).append(".").append(columnNode.getName());
                         break;
                     case CONSTANT:
-                        stringBuilder.append(columnNode.getConstant());
+                        stringBuilder.append("\"").append(columnNode.getConstant()).append("\"");
                         break;
                     default:
                         throw new HulkException("函数字段不支持该类型", ModuleEnum.ACTUATOR);

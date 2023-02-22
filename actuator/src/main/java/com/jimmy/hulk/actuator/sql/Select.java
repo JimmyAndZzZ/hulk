@@ -896,10 +896,10 @@ public class Select extends SQL<List<Map<String, Object>>> {
             List<ColumnNode> functionParam = column.getFunctionParam();
             if (CollUtil.isNotEmpty(functionParam)) {
                 for (ColumnNode columnNode : functionParam) {
-                    if (this.matchTableColumns(tableNode, columnNode)) {
+                    if (!columnNode.getType().equals(ColumnTypeEnum.CONSTANT) && this.matchTableColumns(tableNode, columnNode)) {
                         //聚合函数关联表信息
+                        columnNode.setTableNode(tableNode);
                         if (column.getType().equals(ColumnTypeEnum.AGGREGATE)) {
-                            columnNode.setTableNode(tableNode);
                             column.setTableNode(tableNode);
                         }
 
