@@ -11,14 +11,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.Expression;
-import com.jimmy.hulk.actuator.core.Fragment;
-import com.jimmy.hulk.actuator.utils.SQLUtil;
 import com.jimmy.hulk.actuator.core.ConditionPart;
+import com.jimmy.hulk.actuator.core.Fragment;
 import com.jimmy.hulk.actuator.core.Null;
 import com.jimmy.hulk.actuator.core.Row;
 import com.jimmy.hulk.actuator.memory.MemoryPool;
-import com.jimmy.hulk.data.other.MapComparator;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
+import com.jimmy.hulk.actuator.utils.SQLUtil;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.core.Column;
 import com.jimmy.hulk.common.enums.*;
@@ -31,6 +30,7 @@ import com.jimmy.hulk.data.core.Condition;
 import com.jimmy.hulk.data.core.Order;
 import com.jimmy.hulk.data.core.Page;
 import com.jimmy.hulk.data.core.Wrapper;
+import com.jimmy.hulk.data.other.MapComparator;
 import com.jimmy.hulk.parse.core.element.*;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import lombok.extern.slf4j.Slf4j;
@@ -60,9 +60,6 @@ public class Select extends SQL<List<Map<String, Object>>> {
 
             List<ColumnNode> columns = parseResultNode.getColumns();
             List<TableNode> tableNodes = parseResultNode.getTableNodes();
-            //判断是否只有count
-            ColumnNode aggregateNode = columns.stream().findFirst().get();
-            boolean isOnlyAggregate = columns.size() == 1 && aggregateNode.getAggregateEnum() != null;
             //数据源刷新
             this.dsMatch(tableNodes);
             this.functionFilter(columns);
@@ -90,19 +87,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //是否需要字段填充
             this.fieldFill(parseResultNode);
             //单表查询
-            int size = tableNodes.size();
-            if (size == 1) {
-                return this.singerTableQuery(parseResultNode);
-            }
-
-            List<Row> query = this.multiTableQuery(parseResultNode);
-            //只查询count
-            if (isOnlyAggregate) {
-                //创建文件
-                return this.onlyAggregate(aggregateNode, query);
-            }
-
-            return this.dataProcess(query, parseResultNode);
+            return tableNodes.size() == 1 ? this.singerTableQuery(parseResultNode) : this.dataProcess(this.multiTableQuery(parseResultNode), parseResultNode);
         } catch (HulkException e) {
             throw e;
         } catch (Exception e) {
@@ -467,30 +452,36 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //聚合字段注入
             if (CollUtil.isNotEmpty(aggregateColumns)) {
                 for (ColumnNode aggregateColumn : aggregateColumns) {
-                    map.put(aggregateColumn.getAlias(), this.aggregateCalculate(aggregateColumn, rows));
+                    map.put(aggregateColumn.getAlias(), this.aggregateCalculate(aggregateColumn, values));
                 }
             }
             //外部字段填充
             if (MapUtil.isNotEmpty(defaultData)) {
                 map.putAll(defaultData);
             }
+
+            Map<String, Object> params = Maps.newHashMap();
+            //行数据注入
+            for (Map.Entry<TableNode, Fragment> e : row.getRowData().entrySet()) {
+                TableNode key = e.getKey();
+                Fragment value = e.getValue();
+                List<Integer> index = value.getIndex();
+                //注入参数
+                params.put(key.getAlias(), value.getKey());
+                //显示字段填充
+                if (CollUtil.isNotEmpty(index)) {
+                    map.putAll(partSupport.getSerializer().deserialize(memoryPool.get(index)));
+                }
+            }
             //函数字段填充
             if (MapUtil.isNotEmpty(functionExp)) {
-                Map<String, Object> params = Maps.newHashMap();
-                //行数据注入
-                for (Map.Entry<TableNode, Fragment> e : row.getRowData().entrySet()) {
-                    TableNode key = e.getKey();
-                    Fragment value = e.getValue();
-                    //注入参数
-                    params.put(key.getAlias(), value.getKey());
-                }
-
                 for (Map.Entry<ColumnNode, Expression> entry : functionExp.entrySet()) {
                     ColumnNode mapKey = entry.getKey();
                     Expression mapValue = entry.getValue();
                     map.put(mapKey.getAlias(), mapValue.execute(params));
                 }
             }
+
 
             result.add(map);
         }
@@ -909,6 +900,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
                         //聚合函数关联表信息
                         if (column.getType().equals(ColumnTypeEnum.AGGREGATE)) {
                             columnNode.setTableNode(tableNode);
+                            column.setTableNode(tableNode);
                         }
 
                         columnNames.add(columnNode.getName());
@@ -1171,9 +1163,6 @@ public class Select extends SQL<List<Map<String, Object>>> {
 
         String name = aggregateEnum.equals(AggregateEnum.COUNT) ? StrUtil.EMPTY : aggregateNode.getFunctionParam().stream().findFirst().get().getName();
         TableNode tableNode = aggregateNode.getTableNode();
-        if (tableNode == null && !aggregateEnum.equals(AggregateEnum.COUNT)) {
-            throw new HulkException(name + "字段未找到所属表信息", ModuleEnum.ACTUATOR);
-        }
         //获取数据列表
         List<Fragment> collect = query.stream().map(row -> row.getRowData().get(tableNode)).collect(Collectors.toList());
 
@@ -1203,19 +1192,6 @@ public class Select extends SQL<List<Map<String, Object>>> {
         }
 
         throw new HulkException("不支持该聚合函数", ModuleEnum.ACTUATOR);
-    }
-
-    /**
-     * 只有count处理
-     *
-     * @param countNode
-     * @return
-     */
-    private List<Map<String, Object>> onlyAggregate(ColumnNode countNode, List<Row> query) {
-        Map<String, Object> data = Maps.newHashMap();
-        //聚合函数计算
-        data.put(countNode.getAlias(), this.aggregateCalculate(countNode, query));
-        return Lists.newArrayList(data);
     }
 
     /**
