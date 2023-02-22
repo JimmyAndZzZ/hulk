@@ -39,6 +39,8 @@ public class ColumnNode implements Serializable {
 
     private List<ColumnNode> functionParam = Lists.newArrayList();
 
+    private String functionExp = StrUtil.EMPTY;
+
     private ColumnTypeEnum type = ColumnTypeEnum.FIELD;
 
     public void setFunction(String function) {

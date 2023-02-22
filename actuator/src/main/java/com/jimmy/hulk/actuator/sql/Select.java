@@ -87,7 +87,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //是否需要字段填充
             this.fieldFill(parseResultNode);
             //单表查询
-            return tableNodes.size() == 1 ? this.singerTableQuery(parseResultNode) : this.dataProcess(this.multiTableQuery(parseResultNode), parseResultNode);
+            return tableNodes.size() == 1 ? this.singerTableQuery(parseResultNode) : this.dataProcess(this.multiTableQuery(parseResultNode), parseResultNode, false);
         } catch (HulkException e) {
             throw e;
         } catch (Exception e) {
@@ -293,6 +293,12 @@ public class Select extends SQL<List<Map<String, Object>>> {
         if (!whereConditionExp.getIncludeColumnCondition()) {
             //字段查询过滤
             if (!isAllFields) {
+                //计算字段获取
+                List<String> calculateNeedColumns = this.getCalculateNeedColumns(tableNode);
+                if (CollUtil.isNotEmpty(calculateNeedColumns)) {
+                    wrapper.select(ArrayUtil.toArray(calculateNeedColumns, String.class));
+                }
+
                 for (ColumnNode column : columns) {
                     ColumnTypeEnum type = column.getType();
 
@@ -311,9 +317,20 @@ public class Select extends SQL<List<Map<String, Object>>> {
                             wrapper.aggregateFunction(aggregateEnum, name);
                         }
                     }
+                    //函数
+                    if (type.equals(ColumnTypeEnum.FUNCTION)) {
+                        //数据库内置函数
+                        if (column.getIsDbFunction()) {
+                            StringBuilder functionExp = new StringBuilder(column.getFunction())
+                                    .append("(")
+                                    .append(column.getFunctionExp()).append(")");
 
-                    if (type.equals(ColumnTypeEnum.FUNCTION) && column.getIsDbFunction()) {
-                        wrapper.select(column.getName() + " as " + column.getAlias());
+                            if (column.getIsContainsAlias()) {
+                                functionExp.append(" as ").append(column.getAlias());
+                            }
+
+                            wrapper.select(functionExp.toString());
+                        }
                     }
                 }
             }
@@ -392,7 +409,15 @@ public class Select extends SQL<List<Map<String, Object>>> {
             rows.add(row);
         }
 
-        return whereConditionExp.getIncludeColumnCondition() ? this.dataProcess(rows, parseResultNode) : this.dataMerge(rows, false, true);
+        if (whereConditionExp.getIncludeColumnCondition()) {
+            if (CollUtil.isNotEmpty(this.getCalculateNeedColumns(tableNode))) {
+
+            }
+        }
+
+        //字段过滤
+        List<Map<String, Object>> list = whereConditionExp.getIncludeColumnCondition() ? this.dataProcess(rows, parseResultNode) : this.dataMerge(rows, false, true);
+        return list;
     }
 
     /**

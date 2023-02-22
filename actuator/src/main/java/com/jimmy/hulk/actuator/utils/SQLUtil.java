@@ -10,7 +10,6 @@ import com.jimmy.hulk.actuator.core.ConditionPart;
 import com.jimmy.hulk.actuator.core.Fragment;
 import com.jimmy.hulk.actuator.core.Null;
 import com.jimmy.hulk.actuator.core.Row;
-import com.jimmy.hulk.data.other.MapComparator;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.ConditionEnum;
@@ -20,6 +19,7 @@ import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.core.Condition;
 import com.jimmy.hulk.data.core.ConditionGroup;
 import com.jimmy.hulk.data.core.Wrapper;
+import com.jimmy.hulk.data.other.MapComparator;
 import com.jimmy.hulk.data.utils.ConditionUtil;
 import com.jimmy.hulk.parse.core.element.*;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
@@ -145,6 +145,11 @@ public class SQLUtil {
 
                     StringBuilder childCondition = new StringBuilder();
                     for (ConditionNode conditionNode : conditionNodeList) {
+                        //过滤1=1
+                        if (conditionNode.getColumn().getName().equalsIgnoreCase("1") && conditionNode.getCondition().equals(ConditionEnum.EQ) && conditionNode.getValue() != null && conditionNode.getValue().equals(Integer.valueOf(1))) {
+                            continue;
+                        }
+
                         ColumnNode targetColumn = conditionNode.getTargetColumn();
                         //字段与字段关联
                         if (targetColumn != null) {

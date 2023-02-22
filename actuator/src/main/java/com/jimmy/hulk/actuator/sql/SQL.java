@@ -169,7 +169,11 @@ abstract class SQL<T> implements Operate {
                 ColumnTypeEnum type = columnNode.getType();
                 switch (type) {
                     case FIELD:
-                        stringBuilder.append(columnNode.getTableNode().getAlias()).append(".").append(columnNode.getName());
+                        if (columnNode.getTableNode() != null) {
+                            stringBuilder.append(columnNode.getTableNode().getAlias()).append(".");
+                        }
+
+                        stringBuilder.append(columnNode.getName());
                         break;
                     case CONSTANT:
                         stringBuilder.append("\"").append(columnNode.getConstant()).append("\"");

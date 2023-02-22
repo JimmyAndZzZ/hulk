@@ -2,6 +2,7 @@ package com.jimmy.hulk.parse.support;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -953,8 +954,12 @@ public class SQLParser {
                 ColumnNode columnNode = new ColumnNode();
                 columnNode.setFunction(sqlUnresolvedFunction.getName());
 
-                for (SqlNode operand : sqlBasicCall.operands) {
-                    columnNode.getFunctionParam().add(this.parseColumnNode(operand));
+                if (ArrayUtil.isNotEmpty(sqlBasicCall.operands)) {
+                    columnNode.setFunctionExp(ArrayUtil.join(sqlBasicCall.operands, ","));
+
+                    for (SqlNode operand : sqlBasicCall.operands) {
+                        columnNode.getFunctionParam().add(this.parseColumnNode(operand));
+                    }
                 }
 
                 columnNode.setAlias(columnNode.toString());
