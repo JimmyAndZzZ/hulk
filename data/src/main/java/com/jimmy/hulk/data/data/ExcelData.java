@@ -370,7 +370,7 @@ public class ExcelData extends BaseData {
             case SUM:
                 return result.stream()
                         .filter(map -> map.get(name) != null)
-                        .mapToDouble(map -> NumberUtil.parseDouble(map.get(name).toString())).sum();
+                        .mapToDouble(map -> NumberUtil.parseDouble(map.get(name) != null ? map.get(name).toString() : StrUtil.EMPTY)).sum();
         }
 
         return null;

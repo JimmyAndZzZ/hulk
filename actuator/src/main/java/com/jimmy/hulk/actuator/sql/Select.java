@@ -5,6 +5,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -91,8 +92,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //单表查询
             int size = tableNodes.size();
             if (size == 1) {
-                List<Row> query = this.singerTableQuery(parseResultNode);
-                return this.dataMerge(query);
+                return this.singerTableQuery(parseResultNode);
             }
 
             List<Row> query = this.multiTableQuery(parseResultNode);
@@ -102,7 +102,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
                 return this.onlyAggregate(aggregateNode, query);
             }
 
-            return this.dataMerge(query);
+            return this.dataProcess(query, parseResultNode);
         } catch (HulkException e) {
             throw e;
         } catch (Exception e) {
@@ -275,32 +275,12 @@ public class Select extends SQL<List<Map<String, Object>>> {
     }
 
     /**
-     * 单表count
-     *
-     * @param parseResultNode
-     * @return
-     */
-    private int singerTableCount(ParseResultNode parseResultNode) {
-        Integer fetch = parseResultNode.getFetch();
-        //获取主表
-        TableNode tableNode = parseResultNode.getTableNodes().stream().findFirst().get();
-        //查询数据
-        Data data = partSupport.getData(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName(), null, true);
-        //解析条件
-        ConditionPart whereConditionExp = SQLUtil.getWhereConditionExp(parseResultNode.getWhereConditionNodes());
-
-        Wrapper wrapper = whereConditionExp.getWrapper();
-        int count = data.count(wrapper);
-        return fetch != null && count > fetch ? fetch : count;
-    }
-
-    /**
      * 单表查询
      *
      * @param parseResultNode
      * @return
      */
-    private List<Row> singerTableQuery(ParseResultNode parseResultNode) {
+    private List<Map<String, Object>> singerTableQuery(ParseResultNode parseResultNode) {
         Integer fetch = parseResultNode.getFetch();
         Integer offset = parseResultNode.getOffset();
         List<OrderNode> orderNodes = parseResultNode.getOrderNodes();
@@ -381,14 +361,10 @@ public class Select extends SQL<List<Map<String, Object>>> {
             int pageNo = 0;
 
             Wrapper build = Wrapper.build();
-            //字段查询过滤
-            for (ColumnNode column : columns) {
-                if (column.getType().equals(ColumnTypeEnum.FUNCTION) && column.getIsDbFunction()) {
-                    wrapper.select(column.getName() + " as " + column.getAlias());
-                }
-            }
+            //查询只需要查询的字段，避免非必要字段查询影响性能
+            this.wrapperSelect(tableNode, wrapper);
             //排序
-            if (CollUtil.isNotEmpty(orderNodes)) {
+            if (CollUtil.isNotEmpty(orderNodes) && CollUtil.isEmpty(groupBy)) {
                 for (OrderNode orderNode : orderNodes) {
                     Order order = new Order();
                     order.setFieldName(orderNode.getColumnNode().getAlias());
@@ -431,7 +407,124 @@ public class Select extends SQL<List<Map<String, Object>>> {
             rows.add(row);
         }
 
-        return rows;
+        return whereConditionExp.getIncludeColumnCondition() ? this.dataProcess(rows, parseResultNode) : this.dataMerge(rows, false, true);
+    }
+
+    /**
+     * group By 操作
+     *
+     * @param rows
+     * @param parseResultNode
+     * @return
+     */
+    private List<Map<String, Object>> dataProcess(List<Row> rows, ParseResultNode parseResultNode) {
+        List<ColumnNode> groupBy = parseResultNode.getGroupBy();
+        if (CollUtil.isEmpty(groupBy)) {
+            return this.dataMerge(rows, true, true);
+        }
+        //groupby
+        Map<String, List<Row>> groupby = rows.stream().collect(Collectors.groupingBy(m -> this.getKey(m, parseResultNode)));
+        //结果集
+        List<Map<String, Object>> result = Lists.newArrayList();
+        //默认map用于后续的数据合并
+        Map<String, Object> defaultData = Maps.newHashMap();
+        //常量字段
+        List<ColumnNode> constantColumns = this.getConstantColumns();
+        //函数字段
+        List<ColumnNode> functionColumns = this.getFunctionColumns();
+        //聚合字段
+        List<ColumnNode> aggregateColumns = this.getAggregateColumns();
+        //表达式字段
+        List<ColumnNode> expColumns = this.getExpColumns();
+        //常量字段注入
+        if (CollUtil.isNotEmpty(constantColumns)) {
+            for (ColumnNode constantColumn : constantColumns) {
+                defaultData.put(constantColumn.getAlias(), constantColumn.getConstant());
+            }
+        }
+        //函数表达式
+        Map<ColumnNode, Expression> functionExp = Maps.newHashMap();
+        if (CollUtil.isNotEmpty(functionColumns)) {
+            for (ColumnNode functionColumn : functionColumns) {
+                if (functionColumn.getIsDbFunction()) {
+                    continue;
+                }
+
+                functionExp.put(functionColumn, this.getFunctionExp(functionColumn));
+            }
+        }
+        //表达式
+        if (CollUtil.isNotEmpty(expColumns)) {
+            for (ColumnNode expColumn : expColumns) {
+                functionExp.put(expColumn, AviatorEvaluator.compile(expColumn.getExpression()));
+            }
+        }
+        //遍历合并数据
+        for (List<Row> values : groupby.values()) {
+            Map<String, Object> map = Maps.newHashMap();
+
+            Row row = values.stream().findFirst().get();
+            //聚合字段注入
+            if (CollUtil.isNotEmpty(aggregateColumns)) {
+                for (ColumnNode aggregateColumn : aggregateColumns) {
+                    map.put(aggregateColumn.getAlias(), this.aggregateCalculate(aggregateColumn, rows));
+                }
+            }
+            //外部字段填充
+            if (MapUtil.isNotEmpty(defaultData)) {
+                map.putAll(defaultData);
+            }
+            //函数字段填充
+            if (MapUtil.isNotEmpty(functionExp)) {
+                Map<String, Object> params = Maps.newHashMap();
+                //行数据注入
+                for (Map.Entry<TableNode, Fragment> e : row.getRowData().entrySet()) {
+                    TableNode key = e.getKey();
+                    Fragment value = e.getValue();
+                    //注入参数
+                    params.put(key.getAlias(), value.getKey());
+                }
+
+                for (Map.Entry<ColumnNode, Expression> entry : functionExp.entrySet()) {
+                    ColumnNode mapKey = entry.getKey();
+                    Expression mapValue = entry.getValue();
+                    map.put(mapKey.getAlias(), mapValue.execute(params));
+                }
+            }
+
+            result.add(map);
+        }
+
+        return result;
+    }
+
+    /**
+     * 获取groupby key
+     *
+     * @param row
+     * @param parseResultNode
+     * @return
+     */
+    private String getKey(Row row, ParseResultNode parseResultNode) {
+        List<ColumnNode> groupBy = parseResultNode.getGroupBy();
+        List<TableNode> tableNodes = parseResultNode.getTableNodes();
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < groupBy.size(); i++) {
+            if (i > 0) {
+                sb.append(":");
+            }
+
+            ColumnNode columnNode = groupBy.get(i);
+            TableNode tableNode = tableNodes.size() == 1 ? tableNodes.stream().findFirst().get() : tableNodes.stream().filter(table -> this.matchTableColumns(table, columnNode)).findFirst().get();
+
+            Fragment fragment = row.getRowData().get(tableNode);
+            Object o = fragment.getKey().get(columnNode.getName());
+            sb.append(o != null ? o.toString() : "NULL");
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -644,6 +737,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
         List<String> orderColumns = this.getOrderColumns(tableNode);
         List<String> whereColumns = this.getWhereColumns(tableNode);
         List<String> calculateNeedColumns = this.getCalculateNeedColumns(tableNode);
+        List<String> groupByColumns = this.getGroupByColumns(tableNode);
         List<ColumnNode> selectColumns = this.getSelectColumns(tableNode);
         //判断是否查询全字段
         boolean isAllFields = selectColumns.size() == 1 && selectColumns.stream().findFirst().get().getName().equals(Constants.Actuator.ALL_COLUMN);
@@ -673,6 +767,12 @@ public class Select extends SQL<List<Map<String, Object>>> {
             if (CollUtil.isNotEmpty(calculateNeedColumns)) {
                 for (String calculateNeedColumn : calculateNeedColumns) {
                     fragment.getKey().put(calculateNeedColumn, SQLUtil.valueHandler(map.get(calculateNeedColumn)));
+                }
+            }
+            //group by字段映射
+            if (CollUtil.isNotEmpty(groupByColumns)) {
+                for (String groupByColumn : groupByColumns) {
+                    fragment.getKey().put(groupByColumn, SQLUtil.valueHandler(map.get(groupByColumn)));
                 }
             }
             //全字段
@@ -714,6 +814,13 @@ public class Select extends SQL<List<Map<String, Object>>> {
             selectColumns.addAll(this.getCalculateNeedColumns(tableNode));
             selectColumns.addAll(this.getGroupByColumns(tableNode));
             wrapper.select(ArrayUtil.toArray(selectColumns, String.class));
+            //数据库内部函数
+            for (ColumnNode column : columnNodes) {
+                ColumnTypeEnum type = column.getType();
+                if (type.equals(ColumnTypeEnum.FUNCTION) && column.getIsDbFunction()) {
+                    wrapper.select(column.getName() + " as " + column.getAlias());
+                }
+            }
         }
     }
 
@@ -1088,6 +1195,11 @@ public class Select extends SQL<List<Map<String, Object>>> {
                         .map(fragment -> fragment.getKey())
                         .filter(map -> Convert.toDouble(map.get(name)) != null)
                         .mapToDouble(map -> Convert.toDouble(map.get(name))).average().orElse(0D);
+            case SUM:
+                return collect.stream()
+                        .map(fragment -> fragment.getKey())
+                        .filter(map -> map.get(name) != null)
+                        .mapToDouble(map -> NumberUtil.parseDouble(map.get(name) != null ? map.get(name).toString() : StrUtil.EMPTY)).sum();
         }
 
         throw new HulkException("不支持该聚合函数", ModuleEnum.ACTUATOR);
@@ -1212,7 +1324,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
      * @param rows
      * @return
      */
-    private List<Map<String, Object>> dataMerge(List<Row> rows,) {
+    private List<Map<String, Object>> dataMerge(List<Row> rows, boolean isNeedAggregate, boolean isNeedFunction) {
         if (CollUtil.isEmpty(rows)) {
             return Lists.newArrayList();
         }
@@ -1237,14 +1349,14 @@ public class Select extends SQL<List<Map<String, Object>>> {
             }
         }
         //聚合字段注入
-        if (CollUtil.isNotEmpty(aggregateColumns)) {
+        if (CollUtil.isNotEmpty(aggregateColumns) && isNeedAggregate) {
             for (ColumnNode aggregateColumn : aggregateColumns) {
                 defaultData.put(aggregateColumn.getAlias(), this.aggregateCalculate(aggregateColumn, rows));
             }
         }
         //函数表达式
         Map<ColumnNode, Expression> functionExp = Maps.newHashMap();
-        if (CollUtil.isNotEmpty(functionColumns)) {
+        if (CollUtil.isNotEmpty(functionColumns) && isNeedFunction) {
             for (ColumnNode functionColumn : functionColumns) {
                 if (functionColumn.getIsDbFunction()) {
                     continue;
@@ -1254,7 +1366,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             }
         }
         //表达式
-        if (CollUtil.isNotEmpty(expColumns)) {
+        if (CollUtil.isNotEmpty(expColumns) && isNeedFunction) {
             for (ColumnNode expColumn : expColumns) {
                 functionExp.put(expColumn, AviatorEvaluator.compile(expColumn.getExpression()));
             }
@@ -1262,13 +1374,6 @@ public class Select extends SQL<List<Map<String, Object>>> {
         //遍历合并数据
         for (int i = 0; i < rows.size(); i++) {
             Row row = rows.get(i);
-
-            StringBuilder content = new StringBuilder();
-            //加换行符
-            if (i > 0) {
-                content.append(StrUtil.CRLF);
-            }
-
             Map<String, Object> line = Maps.newHashMap();
             Map<String, Object> params = Maps.newHashMap();
             Map<TableNode, Fragment> data = row.getRowData();
