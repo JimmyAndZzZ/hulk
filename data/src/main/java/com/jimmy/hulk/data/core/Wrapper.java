@@ -34,7 +34,7 @@ public class Wrapper implements Serializable {
     public Wrapper aggregateFunction(AggregateEnum aggregateType, String column) {
         AggregateFunction aggregateFunction = new AggregateFunction();
         aggregateFunction.setAggregateType(aggregateType);
-        aggregateFunction.setAlias(aggregateType.toString().toLowerCase() + "(" + column + ")");
+        aggregateFunction.setAlias(aggregateType.toString() + "(" + column + ")");
         aggregateFunction.setColumn(column);
         queryPlus.addAggregateFunction(aggregateFunction);
         return this;
