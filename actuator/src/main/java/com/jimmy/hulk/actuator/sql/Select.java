@@ -433,6 +433,8 @@ public class Select extends SQL<List<Map<String, Object>>> {
         List<Map<String, Object>> result = Lists.newArrayList();
         //默认map用于后续的数据合并
         Map<String, Object> defaultData = Maps.newHashMap();
+        //普通字段
+        List<ColumnNode> commonColumns = parseResultNode.getColumns().stream().filter(bean -> bean.getType().equals(ColumnTypeEnum.FIELD)).collect(Collectors.toList());
         //常量字段
         List<ColumnNode> constantColumns = this.getConstantColumns();
         //函数字段
@@ -486,11 +488,18 @@ public class Select extends SQL<List<Map<String, Object>>> {
                 TableNode key = e.getKey();
                 Fragment value = e.getValue();
                 List<Integer> index = value.getIndex();
+                Map<String, Object> keyMap = value.getKey();
                 //注入参数
-                params.put(key.getAlias(), value.getKey());
+                params.put(key.getAlias(), keyMap);
                 //显示字段填充
                 if (CollUtil.isNotEmpty(index)) {
                     map.putAll(partSupport.getSerializer().deserialize(memoryPool.get(index)));
+                }
+                //普通字段
+                if (CollUtil.isNotEmpty(commonColumns)) {
+                    for (ColumnNode commonColumn : commonColumns) {
+                        map.put(commonColumn.getAlias(), keyMap.get(commonColumn.getName()));
+                    }
                 }
             }
             //函数字段填充
