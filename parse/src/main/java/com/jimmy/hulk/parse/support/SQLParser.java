@@ -962,8 +962,13 @@ public class SQLParser {
                     }
                 }
 
-                columnNode.setAlias(columnNode.toString());
-                columnNode.setName(columnNode.toString());
+                String functionExp = new StringBuilder(columnNode.getFunction())
+                        .append("(")
+                        .append(columnNode.getFunctionExp())
+                        .append(")").toString();
+
+                columnNode.setAlias(functionExp);
+                columnNode.setName(functionExp);
                 return columnNode;
             }
             //排序字段

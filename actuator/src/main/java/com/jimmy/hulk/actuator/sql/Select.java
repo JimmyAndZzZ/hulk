@@ -87,7 +87,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //是否需要字段填充
             this.fieldFill(parseResultNode);
             //单表查询
-            return tableNodes.size() == 1 ? this.singerTableQuery(parseResultNode) : this.dataProcess(this.multiTableQuery(parseResultNode), parseResultNode, false);
+            return tableNodes.size() == 1 ? this.singerTableQuery(parseResultNode) : this.dataProcess(this.multiTableQuery(parseResultNode), parseResultNode);
         } catch (HulkException e) {
             throw e;
         } catch (Exception e) {
@@ -291,14 +291,11 @@ public class Select extends SQL<List<Map<String, Object>>> {
         List<Fragment> fragments = Lists.newArrayList();
         //未包含字段与字段条件
         if (!whereConditionExp.getIncludeColumnCondition()) {
+            //额外字段
+            List<String> calculateNeedColumns = this.getCalculateNeedColumns(tableNode);
             //字段查询过滤
             if (!isAllFields) {
                 //计算字段获取
-                List<String> calculateNeedColumns = this.getCalculateNeedColumns(tableNode);
-                if (CollUtil.isNotEmpty(calculateNeedColumns)) {
-                    wrapper.select(ArrayUtil.toArray(calculateNeedColumns, String.class));
-                }
-
                 for (ColumnNode column : columns) {
                     ColumnTypeEnum type = column.getType();
 
@@ -307,9 +304,11 @@ public class Select extends SQL<List<Map<String, Object>>> {
                     }
 
                     if (type.equals(ColumnTypeEnum.AGGREGATE)) {
+                        List<ColumnNode> functionParam = column.getFunctionParam();
+
                         Boolean isContainsAlias = column.getIsContainsAlias();
                         AggregateEnum aggregateEnum = column.getAggregateEnum();
-                        String name = aggregateEnum.equals(AggregateEnum.COUNT) ? "1" : column.getFunctionParam().stream().findFirst().get().getName();
+                        String name = aggregateEnum.equals(AggregateEnum.COUNT) ? "1" : functionParam.stream().findFirst().get().getName();
 
                         if (isContainsAlias) {
                             wrapper.aggregateFunction(aggregateEnum, name, column.getAlias());
@@ -321,9 +320,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
                     if (type.equals(ColumnTypeEnum.FUNCTION)) {
                         //数据库内置函数
                         if (column.getIsDbFunction()) {
-                            StringBuilder functionExp = new StringBuilder(column.getFunction())
-                                    .append("(")
-                                    .append(column.getFunctionExp()).append(")");
+                            StringBuilder functionExp = new StringBuilder(column.getName());
 
                             if (column.getIsContainsAlias()) {
                                 functionExp.append(" as ").append(column.getAlias());
@@ -347,6 +344,12 @@ public class Select extends SQL<List<Map<String, Object>>> {
             if (CollUtil.isNotEmpty(groupBy)) {
                 for (ColumnNode columnNode : groupBy) {
                     wrapper.groupBy(columnNode.getName());
+                }
+            }
+            //额外参数字段
+            if (CollUtil.isNotEmpty(calculateNeedColumns)) {
+                for (String s : calculateNeedColumns) {
+                    wrapper.select(s);
                 }
             }
             //查询数据
@@ -408,16 +411,8 @@ public class Select extends SQL<List<Map<String, Object>>> {
             row.getRowData().put(tableNode, fragment);
             rows.add(row);
         }
-
-        if (whereConditionExp.getIncludeColumnCondition()) {
-            if (CollUtil.isNotEmpty(this.getCalculateNeedColumns(tableNode))) {
-
-            }
-        }
-
         //字段过滤
-        List<Map<String, Object>> list = whereConditionExp.getIncludeColumnCondition() ? this.dataProcess(rows, parseResultNode) : this.dataMerge(rows, false, true);
-        return list;
+        return whereConditionExp.getIncludeColumnCondition() ? this.dataProcess(rows, parseResultNode) : this.dataMerge(rows, false, true);
     }
 
     /**
@@ -852,6 +847,10 @@ public class Select extends SQL<List<Map<String, Object>>> {
             return true;
         }
 
+        if (columnNode.getSubjection() == null) {
+            return true;
+        }
+
         return columnNode.getSubjection().equalsIgnoreCase(tableNode.getAlias()) || columnNode.getSubjection().equalsIgnoreCase(tableNode.getTableName());
     }
 
@@ -914,7 +913,12 @@ public class Select extends SQL<List<Map<String, Object>>> {
 
         List<ColumnNode> columns = parseResultNode.getColumns();
         for (ColumnNode column : columns) {
-            if (column.getType().equals(ColumnTypeEnum.FIELD) || column.getType().equals(ColumnTypeEnum.CONSTANT)) {
+            ColumnTypeEnum type = column.getType();
+            if (type.equals(ColumnTypeEnum.FIELD) || type.equals(ColumnTypeEnum.CONSTANT)) {
+                continue;
+            }
+
+            if (type.equals(ColumnTypeEnum.FUNCTION) && column.getIsDbFunction()) {
                 continue;
             }
 
@@ -924,7 +928,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
                     if (!columnNode.getType().equals(ColumnTypeEnum.CONSTANT) && this.matchTableColumns(tableNode, columnNode)) {
                         //聚合函数关联表信息
                         columnNode.setTableNode(tableNode);
-                        if (column.getType().equals(ColumnTypeEnum.AGGREGATE)) {
+                        if (type.equals(ColumnTypeEnum.AGGREGATE)) {
                             column.setTableNode(tableNode);
                         }
 
