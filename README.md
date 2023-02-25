@@ -200,6 +200,5 @@ EXECUTE|QUERY 'test1' SQL 'select 1 from 1'
 #### 未完成点
 
 - 目前navicat支持查看，但dml操作提示主键未找到后期会修复
-- 目前不支持group by、exists复杂性sql
-- 聚合函数目前只支持count,max,min,avg
+- 目前不支持exists复杂性sql
 - alter语句目前不支持
