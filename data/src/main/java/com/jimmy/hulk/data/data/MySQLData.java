@@ -217,7 +217,6 @@ public class MySQLData extends TransactionData {
         ExecuteBody executeBody = new ExecuteBody();
         executeBody.setSql(updateSql);
         executeBody.setObjects(param.toArray());
-        param.add(executeBody);
 
         log.debug("准备执行Update操作，sql:{},value:{}", sql);
 
