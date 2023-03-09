@@ -53,10 +53,10 @@ public class SQLExecutor {
                     session.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported command");
                     break;
                 case QueryParse.COMMIT:
-                    ErrorResponse.response(session, "123");
+                    actions.get(QueryParse.COMMIT).action(sql, session, rs >>> 8);
                     break;
                 case QueryParse.ROLLBACK:
-                    OkResponse.response(session);
+                    actions.get(QueryParse.ROLLBACK).action(sql, session, rs >>> 8);
                     break;
                 case QueryParse.SHOW:
                     actions.get(QueryParse.SHOW).action(sql, session, rs >>> 8);

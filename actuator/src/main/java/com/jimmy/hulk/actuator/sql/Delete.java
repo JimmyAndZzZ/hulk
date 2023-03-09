@@ -39,7 +39,7 @@ public class Delete extends SQL<Integer> {
         TableNode tableNode = tableNodes.stream().findFirst().get();
         tableNode.setDsName(ExecuteHolder.getDatasourceName());
         //是否能够执行SQL
-        if (this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
+        if (ExecuteHolder.isAutoCommit() && this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
             Actuator actuator = partSupport.getActuator(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), false);
 
             String sql = parseResultNode.getSql();

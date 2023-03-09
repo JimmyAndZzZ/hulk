@@ -23,13 +23,24 @@ public class ExecuteHolder {
 
     private static ThreadLocal<Boolean> isPrepared = new ThreadLocal<>();
 
+    private static ThreadLocal<Boolean> isAutoCommit = new ThreadLocal<>();
+
     public static void prepared() {
         isPrepared.set(true);
+    }
+
+    public static void manualCommit() {
+        isAutoCommit.set(false);
     }
 
     public static boolean isPrepared() {
         Boolean aBoolean = isPrepared.get();
         return aBoolean != null ? aBoolean : false;
+    }
+
+    public static boolean isAutoCommit() {
+        Boolean aBoolean = isAutoCommit.get();
+        return aBoolean != null ? aBoolean : true;
     }
 
     public static <T> T get(String key, Class<T> clazz) {
@@ -59,6 +70,7 @@ public class ExecuteHolder {
         indexes.remove();
         fillField.remove();
         isPrepared.remove();
+        isAutoCommit.remove();
     }
 
     public static void addIndex(Integer index) {

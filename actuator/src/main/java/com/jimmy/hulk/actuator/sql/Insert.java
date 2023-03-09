@@ -47,7 +47,7 @@ public class Insert extends SQL<InsertResult> {
         TableNode tableNode = tableNodes.stream().findFirst().get();
         tableNode.setDsName(ExecuteHolder.getDatasourceName());
         //是否能够执行SQL
-        if (!partSupport.isConfigTableWhenInsert(tableNode.getDsName(), tableNode.getTableName()) && this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
+        if (ExecuteHolder.isAutoCommit() && !partSupport.isConfigTableWhenInsert(tableNode.getDsName(), tableNode.getTableName()) && this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
             String sql = parseResultNode.getSql();
 
             Actuator actuator = partSupport.getActuator(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), false);

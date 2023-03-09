@@ -64,7 +64,7 @@ public class Update extends SQL<Integer> {
         tableNode.setDsName(ExecuteHolder.getDatasourceName());
         //是否能够执行SQL
         Actuator actuator = partSupport.getActuator(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), false);
-        if (this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
+        if (ExecuteHolder.isAutoCommit() && this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
             String sql = parseResultNode.getSql();
             log.info("准备执行SQL:{}", sql);
             return actuator.update(sql);
