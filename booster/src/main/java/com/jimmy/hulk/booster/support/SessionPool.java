@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.jimmy.hulk.authority.base.AuthenticationManager;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.booster.core.Prepared;
+import com.jimmy.hulk.config.support.SystemVariableContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,9 @@ public class SessionPool {
     private SQLExecutor executor;
 
     @Autowired
+    private SystemVariableContext systemVariableContext;
+
+    @Autowired
     private AuthenticationManager authenticationManager;
 
     public void remove(Long id) {
@@ -39,7 +43,7 @@ public class SessionPool {
     }
 
     public Session getSession() {
-        Session session = new Session(ACCEPT_SEQ.getAndIncrement(), prepared, authenticationManager);
+        Session session = new Session(systemVariableContext.getTransactionTimeout(), ACCEPT_SEQ.getAndIncrement(), prepared, authenticationManager);
         session.setExecutor(executor);
         return session;
     }

@@ -15,6 +15,12 @@ public class DeleteAction extends BaseAction {
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
+        //手动提交
+        if (!session.isAutocommit()) {
+            session.addSQL(sql);
+            this.success(session, 1);
+            return;
+        }
         //正常SQL执行
         ParseResultNode parse = sqlParser.parse(sql);
         this.success(session, delete.execute(parse));

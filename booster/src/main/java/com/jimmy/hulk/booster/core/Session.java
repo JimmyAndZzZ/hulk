@@ -1,6 +1,9 @@
 package com.jimmy.hulk.booster.core;
 
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
+import com.google.common.collect.Lists;
 import com.jimmy.hulk.authority.base.AuthenticationManager;
 import com.jimmy.hulk.booster.support.SQLExecutor;
 import com.jimmy.hulk.common.constant.Constants;
@@ -22,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 前端连接
@@ -62,12 +66,39 @@ public class Session extends Context {
 
     private boolean autoCommit = true;
 
-    public Session(Long id, Prepared prepared, AuthenticationManager authenticationManager) {
+    private Date lastCommitSQLTime;
+
+    private Integer timeout;
+
+    @Getter
+    private List<String> waitTransactionSQL = Lists.newArrayList();
+
+    public Session(Integer timeout, Long id, Prepared prepared, AuthenticationManager authenticationManager) {
         this.id = id;
         this.charset = Constants.Booster.DEFAULT_CHARSET;
         this.setLastActiveTime();
         this.prepared = prepared;
         this.authenticationManager = authenticationManager;
+        this.timeout = timeout;
+    }
+
+    public void addSQL(String sql) {
+        if (this.autoCommit) {
+            return;
+        }
+
+        Date now = new Date();
+        if (this.lastCommitSQLTime == null) {
+            this.waitTransactionSQL.add(sql);
+            this.lastCommitSQLTime = now;
+        }
+        //超过事务超时时间
+        if (DateUtil.between(this.lastCommitSQLTime, now, DateUnit.SECOND) > timeout) {
+            this.waitTransactionSQL.clear();
+        }
+
+        waitTransactionSQL.add(sql);
+        this.lastCommitSQLTime = now;
     }
 
     public boolean isAutocommit() {

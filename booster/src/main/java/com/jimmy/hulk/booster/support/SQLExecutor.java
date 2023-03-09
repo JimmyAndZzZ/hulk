@@ -7,6 +7,7 @@ import com.jimmy.hulk.booster.base.Action;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
+import com.jimmy.hulk.protocol.reponse.ErrorResponse;
 import com.jimmy.hulk.protocol.reponse.OkResponse;
 import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,8 @@ public class SQLExecutor {
                     session.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported command");
                     break;
                 case QueryParse.COMMIT:
+                    ErrorResponse.response(session, "123");
+                    break;
                 case QueryParse.ROLLBACK:
                     OkResponse.response(session);
                     break;

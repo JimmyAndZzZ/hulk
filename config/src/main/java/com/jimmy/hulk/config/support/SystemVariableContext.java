@@ -13,6 +13,16 @@ public class SystemVariableContext {
 
     private Integer defaultExpire = 30;
 
+    private Integer transactionTimeout = 60;
+
+    public Integer getTransactionTimeout() {
+        return transactionTimeout;
+    }
+
+    void setTransactionTimeout(Integer transactionTimeout) {
+        this.transactionTimeout = transactionTimeout;
+    }
+
     public Integer getPageSize() {
         return pageSize;
     }
