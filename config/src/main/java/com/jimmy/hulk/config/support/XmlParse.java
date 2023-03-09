@@ -169,6 +169,10 @@ public class XmlParse {
                     if (name.equalsIgnoreCase("port")) {
                         systemVariableContext.setPort(Integer.valueOf(value));
                     }
+
+                    if (name.equalsIgnoreCase("transactionTimeout")) {
+                        systemVariableContext.setTransactionTimeout(Integer.valueOf(value));
+                    }
                 }
             }
         }
