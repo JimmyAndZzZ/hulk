@@ -60,9 +60,9 @@ public class CommitAction extends BaseAction {
             }
 
             Transaction.commit();
+            session.writeOk();
         } catch (Exception e) {
             Transaction.rollback();
-            log.error("批量提交失败", e);
             throw e;
         } finally {
             waitTransactionSQL.clear();

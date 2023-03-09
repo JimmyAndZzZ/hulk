@@ -91,6 +91,7 @@ public class Session extends Context {
         if (this.lastCommitSQLTime == null) {
             this.waitTransactionSQL.add(sql);
             this.lastCommitSQLTime = now;
+            return;
         }
         //超过事务超时时间
         if (DateUtil.between(this.lastCommitSQLTime, now, DateUnit.SECOND) > timeout) {
