@@ -60,12 +60,22 @@ public class Session extends Context {
 
     private AuthenticationManager authenticationManager;
 
+    private boolean autoCommit = true;
+
     public Session(Long id, Prepared prepared, AuthenticationManager authenticationManager) {
         this.id = id;
         this.charset = Constants.Booster.DEFAULT_CHARSET;
         this.setLastActiveTime();
         this.prepared = prepared;
         this.authenticationManager = authenticationManager;
+    }
+
+    public boolean isAutocommit() {
+        return autoCommit;
+    }
+
+    public void setAutocommit(boolean autoCommit) {
+        this.autoCommit = autoCommit;
     }
 
     // initDB的同时 bind BackendConnecton

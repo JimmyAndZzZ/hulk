@@ -13,11 +13,26 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SetAction implements Action {
 
+    private static final byte[] AC_OFF = new byte[]{7, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
+
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
         int rs = SetParse.parse(sql, offset);
         switch (rs & 0xff) {
+            case SetParse.AUTOCOMMIT_ON:
+                if (session.isAutocommit()) {
+                    session.writeOk();
+                } else {
+                    session.setAutocommit(true);
+                }
+                break;
             case SetParse.AUTOCOMMIT_OFF:
+                if (session.isAutocommit()) {
+                    session.setAutocommit(false);
+                }
+
+                session.writeBuf(AC_OFF);
+                break;
             case SetParse.TX_READ_UNCOMMITTED:
             case SetParse.TX_READ_COMMITTED:
             case SetParse.TX_REPEATED_READ:
