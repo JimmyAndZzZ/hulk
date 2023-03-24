@@ -22,7 +22,7 @@ public class MySQLDmlParse implements DmlParse {
             String key = entry.getKey();
 
             s2.append("?").append(",");
-            s1.append(key + ",");
+            s1.append("`").append(key + "`,");
             param.add(v);
         }
         //去除最后一个逗号
@@ -38,7 +38,7 @@ public class MySQLDmlParse implements DmlParse {
         //参数单引号处理
         for (Map.Entry<String, Object> entry : data.entrySet()) {
             Object v = entry.getValue();
-            sb.append(entry.getKey()).append("=?").append(",");
+            sb.append("`").append(entry.getKey()).append("`=?").append(",");
             param.add(v);
         }
         //去除最后一个逗号
