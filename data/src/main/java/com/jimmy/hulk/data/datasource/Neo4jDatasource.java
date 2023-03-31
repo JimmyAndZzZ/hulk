@@ -16,7 +16,7 @@ import java.util.Map;
 
 import static com.jimmy.hulk.common.enums.DatasourceEnum.NEO4J;
 
-@Conditional(ElasticsearchCondition.class)
+@Conditional(Neo4jCondition.class)
 @DS(type = NEO4J, condition = Neo4jCondition.class)
 public class Neo4jDatasource extends BaseDatasource<Driver> {
 
