@@ -213,6 +213,9 @@ public class ClickHouseActuator extends Actuator<String> {
             }
             stmt.executeBatch();
             connection.commit();
+        } catch (Exception e) {
+            connection.rollback();
+            throw e;
         } finally {
             DataSourceUtils.releaseConnection(connection, dataSource);
         }
