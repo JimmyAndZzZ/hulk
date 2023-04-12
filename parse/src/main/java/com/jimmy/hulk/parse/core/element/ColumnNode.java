@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ColumnTypeEnum;
+import com.jimmy.hulk.common.enums.FieldTypeEnum;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -42,6 +43,10 @@ public class ColumnNode implements Serializable {
     private String functionExp = StrUtil.EMPTY;
 
     private ColumnTypeEnum type = ColumnTypeEnum.FIELD;
+
+    private FieldTypeEnum fieldType;
+
+    private String length;
 
     public void setFunction(String function) {
         this.function = function;

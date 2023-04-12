@@ -10,5 +10,6 @@ public enum AlterTypeEnum {
     ADD_COLUMN,
     MODIFY_COLUMN,
     DROP_COLUMN,
-    CHANGE_COLUMN
+    CHANGE_COLUMN,
+    ADD_INDEX
 }

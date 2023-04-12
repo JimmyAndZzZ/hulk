@@ -59,4 +59,15 @@ public enum FieldTypeEnum {
 
         return sb.append("(").append(StrUtil.emptyToDefault(length, fieldTypeEnum.getDefaultLengthValue())).append(")").toString();
     }
+
+    public static FieldTypeEnum getByCode(String code) {
+        FieldTypeEnum[] values = FieldTypeEnum.values();
+        for (FieldTypeEnum value : values) {
+            if (value.code.equalsIgnoreCase(code)) {
+                return value;
+            }
+        }
+
+        return null;
+    }
 }
