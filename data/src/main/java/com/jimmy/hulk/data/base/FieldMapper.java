@@ -12,4 +12,6 @@ public interface FieldMapper {
     DatasourceEnum type();
 
     String[] getAllMapperTypes();
+
+    boolean isNeedLength();
 }

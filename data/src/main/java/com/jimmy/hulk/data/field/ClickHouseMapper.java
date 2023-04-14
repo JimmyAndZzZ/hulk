@@ -14,24 +14,26 @@ import static com.jimmy.hulk.common.enums.DatasourceEnum.CLICK_HOUSE;
 @DS(type = CLICK_HOUSE)
 public enum ClickHouseMapper implements FieldMapper {
 
-    VARCHAR(FieldTypeEnum.VARCHAR, "String", null),
-    INT(FieldTypeEnum.INT, "Int16", new String[]{"Int32"}),
-    BIGINT(FieldTypeEnum.BIGINT, "Int64", null),
-    FLOAT(FieldTypeEnum.FLOAT, "Float32", null),
-    DOUBLE(FieldTypeEnum.DOUBLE, "Flout64", null),
-    DECIMAL(FieldTypeEnum.DECIMAL, "Decimal64", new String[]{"Decimal32", "Decimal128"}),
-    BOOLEAN(FieldTypeEnum.BOOLEAN, "Int8", null),
-    DATE(FieldTypeEnum.DATE, "DateTime", new String[]{"Datetime64", "Date"}),
-    TEXT(FieldTypeEnum.TEXT, "String", null),
-    LONGTEXT(FieldTypeEnum.LONGTEXT, "String", null),
-    CHAR(FieldTypeEnum.CHAR, "FixedString", null),
-    TIMESTAMP(FieldTypeEnum.TIMESTAMP, "DateTime", null);
+    VARCHAR(FieldTypeEnum.VARCHAR, "String", null, true),
+    INT(FieldTypeEnum.INT, "Int16", new String[]{"Int32"}, true),
+    BIGINT(FieldTypeEnum.BIGINT, "Int64", null, true),
+    FLOAT(FieldTypeEnum.FLOAT, "Float32", null, true),
+    DOUBLE(FieldTypeEnum.DOUBLE, "Flout64", null, true),
+    DECIMAL(FieldTypeEnum.DECIMAL, "Decimal64", new String[]{"Decimal32", "Decimal128"}, true),
+    BOOLEAN(FieldTypeEnum.BOOLEAN, "Int8", null, true),
+    DATE(FieldTypeEnum.DATE, "DateTime", new String[]{"Datetime64", "Date"}, false),
+    TEXT(FieldTypeEnum.TEXT, "String", null, true),
+    LONGTEXT(FieldTypeEnum.LONGTEXT, "String", null, true),
+    CHAR(FieldTypeEnum.CHAR, "FixedString", null, true),
+    TIMESTAMP(FieldTypeEnum.TIMESTAMP, "DateTime", null, false);
 
     private FieldTypeEnum fieldType;
 
     private String mapperType;
 
     private String[] allMapperTypes;
+
+    private boolean isNeedLength;
 
     @Override
     public DatasourceEnum type() {

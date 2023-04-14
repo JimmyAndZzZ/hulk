@@ -18,6 +18,10 @@ import java.util.Map;
 
 public abstract class BaseDatasource<T> implements DataSource<T> {
 
+    protected static final int MAX_COUNT = 1000;
+
+    protected static final String DEFAULT_DELIMITER = ";";
+
     @Setter
     @Getter
     protected DataSourceProperty dataSourceProperty;

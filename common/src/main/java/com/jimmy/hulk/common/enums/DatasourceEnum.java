@@ -11,7 +11,8 @@ public enum DatasourceEnum {
     ORACLE("2", "oracle", true, true),
     CLICK_HOUSE("3", "clickhouse", true, true),
     NEO4J("4", "neo4j", true, false),
-    EXCEL("5", "excel", false, false);
+    EXCEL("5", "excel", false, false),
+    SQL_SERVER("6", "sqlServer", true, false);
 
     private String code;
 

@@ -3,13 +3,13 @@ package com.jimmy.hulk.data.datasource;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Maps;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
-import com.jimmy.hulk.data.actuator.MySQLActuator;
+import com.jimmy.hulk.data.actuator.SqlServerActuator;
 import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.MySQLCondition;
+import com.jimmy.hulk.data.condition.SqlServerCondition;
 import com.jimmy.hulk.data.core.Dump;
 import com.jimmy.hulk.data.notify.ImportNotify;
-import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
@@ -25,16 +25,13 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.MYSQL;
-
 @Slf4j
-@Conditional(MySQLCondition.class)
-@DS(type = MYSQL, condition = MySQLCondition.class)
-public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
+@Conditional(SqlServerCondition.class)
+@DS(type = DatasourceEnum.SQL_SERVER, condition = SqlServerCondition.class)
+public class SqlServerDatasource extends BaseDatasource<javax.sql.DataSource> {
 
     private static ConcurrentMap<String, HikariDataSource> dsCache = Maps.newConcurrentMap();
 
@@ -50,7 +47,7 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
 
     @Override
     public Actuator getActuator() {
-        return new MySQLActuator(this, dataSourceProperty);
+        return new SqlServerActuator(this, dataSourceProperty);
     }
 
     @Override
@@ -82,7 +79,7 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
         config.setJdbcUrl(StrUtil.replace(dataSourceProperty.getUrl(), "+", "%2B"));
         config.setUsername(dataSourceProperty.getUsername());
         config.setPassword(dataSourceProperty.getPassword());
-        config.setDriverClassName("com.mysql.jdbc.Driver");
+        config.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 
         if (timeout != null) {
             config.setConnectionTimeout(timeout);
@@ -91,7 +88,7 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
         config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        config.setConnectionTestQuery("select 1 from dual");
+        config.setConnectionTestQuery("select 1 ");
         config.setMaximumPoolSize(dataSourceProperty.getMaxPoolSize());
         return new HikariDataSource(config);
     }
@@ -127,7 +124,7 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
         LineNumberReader lineReader = new LineNumberReader(reader);
         //计算总行数
         List<String> strings = FileUtil.readLines(file, StandardCharsets.UTF_8);
-        long sum = strings.stream().filter(str -> str.startsWith("REPLACE INTO") || str.startsWith("INSERT INTO")).count();
+        long sum = strings.stream().filter(str -> str.startsWith("INSERT INTO")).count();
 
         AtomicInteger i = new AtomicInteger(0);
         AtomicInteger count = new AtomicInteger(0);
@@ -136,6 +133,10 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
                 //别名替换
                 if (StrUtil.isNotEmpty(alias)) {
                     line = StrUtil.replace(line, new StringBuilder("`").append(table).append("`").toString(), new StringBuilder("`").append(alias).append("`").toString());
+                }
+
+                if (StrUtil.contains(line, "`")) {
+                    line = StrUtil.removeAll(line, "`");
                 }
 
                 if (command == null) {
@@ -154,7 +155,7 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
                     // Do nothing
                 } else if (StrUtil.startWith(trimmedLine, "DELIMITER ;")) {
                     // Do nothing
-                } else if (trimmedLine.startsWith("REPLACE INTO") || trimmedLine.startsWith("INSERT INTO")) {
+                } else if (trimmedLine.startsWith("INSERT INTO")) {
                     int size = i.get();
 
                     if (size >= MAX_COUNT) {
@@ -168,7 +169,7 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
                     count.incrementAndGet();
                     statement.execute(trimmedLine);
                     i.incrementAndGet();
-                } else if (((!trimmedLine.startsWith("REPLACE INTO") && !trimmedLine.startsWith("INSERT INTO"))) && trimmedLine.endsWith(DEFAULT_DELIMITER)) {
+                } else if (((!trimmedLine.startsWith("INSERT INTO"))) && trimmedLine.endsWith(DEFAULT_DELIMITER)) {
                     command.append(line, 0, line.lastIndexOf(DEFAULT_DELIMITER));
                     command.append(" ");
 
@@ -195,6 +196,6 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
 
     @Override
     public DatasourceEnum type() {
-        return DatasourceEnum.MYSQL;
+        return DatasourceEnum.SQL_SERVER;
     }
 }

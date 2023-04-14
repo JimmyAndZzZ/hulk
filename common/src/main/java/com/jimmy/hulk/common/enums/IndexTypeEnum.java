@@ -7,7 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum IndexTypeEnum {
 
-    NORMAL("KEY", "普通索引"),
+    NORMAL("NORMAL", "普通索引"),
     UNIQUE("UNIQUE KEY", "唯一索引");
 
     private String code;

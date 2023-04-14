@@ -54,10 +54,16 @@
         <aviator.version>5.0.1</aviator.version>
         <netty.all.version>5.0.0.Alpha1</netty.all.version>
         <jsqlparser.version>4.6</jsqlparser.version>
+        <mssql.version>9.2.1.jre8</mssql.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.microsoft.sqlserver</groupId>
+                <artifactId>mssql-jdbc</artifactId>
+                <version>${mssql.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.github.jsqlparser</groupId>
                 <artifactId>jsqlparser</artifactId>

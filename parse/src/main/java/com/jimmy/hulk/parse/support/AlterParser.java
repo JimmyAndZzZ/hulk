@@ -1,9 +1,11 @@
 package com.jimmy.hulk.parse.support;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.AlterTypeEnum;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
+import com.jimmy.hulk.common.enums.IndexTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.parse.core.element.AlterNode;
@@ -20,11 +22,12 @@ import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.Index;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class AlterParser {
 
-    private List<AlterNode> parse(String sql) {
+    public List<AlterNode> parse(String sql) {
         List<AlterNode> alters = Lists.newArrayList();
 
         try {
@@ -42,18 +45,68 @@ public class AlterParser {
                         case ADD:
                             if (CollUtil.isNotEmpty(alterExpression.getColDataTypeList())) {
                                 AlterNode alterNode = new AlterNode();
+                                alterNode.setTable(name);
                                 alterNode.setAlterTypeEnum(AlterTypeEnum.ADD_COLUMN);
                                 alterNode.setColumnNode(this.handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
                                 alters.add(alterNode);
                             }
 
-                            if (alterExpression.getIndex() != null) {
-                                Index index = alterExpression.getIndex();
-
-                                List<Index.ColumnParams> columns = index.getColumns();
-
+                            IndexNode indexNode = this.handlerIndex(alterExpression);
+                            if (indexNode != null) {
+                                AlterNode alterNode = new AlterNode();
+                                alterNode.setTable(name);
+                                alterNode.setIndexNode(indexNode);
+                                alterNode.setAlterTypeEnum(AlterTypeEnum.ADD_INDEX);
+                                alters.add(alterNode);
                             }
 
+                            break;
+                        case MODIFY:
+                            if (CollUtil.isNotEmpty(alterExpression.getColDataTypeList())) {
+                                AlterNode alterNode = new AlterNode();
+                                alterNode.setTable(name);
+                                alterNode.setAlterTypeEnum(AlterTypeEnum.MODIFY_COLUMN);
+                                alterNode.setColumnNode(this.handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
+                                alters.add(alterNode);
+                            }
+
+                            break;
+                        case CHANGE:
+                            if (CollUtil.isEmpty(alterExpression.getColDataTypeList())) {
+                                ColumnNode oldColumnNode = new ColumnNode();
+                                oldColumnNode.setName(alterExpression.getColumnOldName());
+
+                                AlterNode alterNode = new AlterNode();
+                                alterNode.setTable(name);
+                                alterNode.setOldColumnNode(oldColumnNode);
+                                alterNode.setAlterTypeEnum(AlterTypeEnum.CHANGE_COLUMN);
+                                alterNode.setColumnNode(this.handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
+                                alters.add(alterNode);
+                            }
+
+                            break;
+                        case DROP:
+                            if (CollUtil.isEmpty(alterExpression.getColDataTypeList())) {
+                                ColumnNode columnNode = new ColumnNode();
+                                columnNode.setName(alterExpression.getColumnOldName());
+
+                                AlterNode alterNode = new AlterNode();
+                                alterNode.setTable(name);
+                                alterNode.setAlterTypeEnum(AlterTypeEnum.DROP_COLUMN);
+                                alterNode.setColumnNode(columnNode);
+                                alters.add(alterNode);
+                            }
+
+                            IndexNode dropIndexNode = this.handlerIndex(alterExpression);
+                            if (dropIndexNode != null) {
+                                AlterNode alterNode = new AlterNode();
+                                alterNode.setTable(name);
+                                alterNode.setIndexNode(dropIndexNode);
+                                alterNode.setAlterTypeEnum(AlterTypeEnum.DROP_INDEX);
+                                alters.add(alterNode);
+                            }
+
+                            break;
                     }
                 }
             }
@@ -102,16 +155,41 @@ public class AlterParser {
      * @return
      */
     private IndexNode handlerIndex(AlterExpression alterExpression) {
+        String ukName = alterExpression.getUkName();
+        Index index = alterExpression.getIndex();
 
-    }
+        switch (alterExpression.getOperation()) {
+            case ADD:
+                if (StrUtil.isNotBlank(ukName)) {
+                    IndexNode indexNode = new IndexNode();
+                    indexNode.setName(ukName);
+                    indexNode.setIndexType(IndexTypeEnum.UNIQUE);
+                    indexNode.setColumns(alterExpression.getUkColumns());
+                    return indexNode;
+                }
 
-    public static void main(String[] args) {
-        String addC = "ALTER TABLE vendors\n" +
-                "ADD COLUMN phone VARCHAR(15) AFTER name;";
+                if (index != null) {
+                    List<Index.ColumnParams> columns = index.getColumns();
 
-        String addI = "ALTER TABLE `datafeed_dss`.`dss_b_code` \n" +
-                "ADD UNIQUE INDEX `test_index`(`ID`, `delflag`) USING BTREE;";
+                    IndexNode indexNode = new IndexNode();
+                    indexNode.setName(index.getName());
+                    indexNode.setIndexType(IndexTypeEnum.NORMAL);
+                    indexNode.setColumns(columns.stream().map(Index.ColumnParams::getColumnName).collect(Collectors.toList()));
+                    return indexNode;
+                }
 
-        List<AlterNode> parse = new AlterParser().parse(addI);
+                break;
+            case DROP:
+                if (index != null) {
+                    IndexNode indexNode = new IndexNode();
+                    indexNode.setName(index.getName());
+                    return indexNode;
+                }
+
+                break;
+        }
+
+
+        return null;
     }
 }

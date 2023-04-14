@@ -13,24 +13,26 @@ import static com.jimmy.hulk.common.enums.DatasourceEnum.ELASTICSEARCH;
 @AllArgsConstructor
 @DS(type = ELASTICSEARCH)
 public enum ElasticsearchMapper implements FieldMapper {
-    VARCHAR(FieldTypeEnum.VARCHAR, "text", null),
-    INT(FieldTypeEnum.INT, "integer", null),
-    BIGINT(FieldTypeEnum.BIGINT, "long", null),
-    FLOAT(FieldTypeEnum.FLOAT, "float", null),
-    DOUBLE(FieldTypeEnum.DOUBLE, "double", null),
-    DECIMAL(FieldTypeEnum.DECIMAL, "double", null),
-    BOOLEAN(FieldTypeEnum.BOOLEAN, "boolean", null),
-    DATE(FieldTypeEnum.DATE, "date", null),
-    TEXT(FieldTypeEnum.TEXT, "text", null),
-    LONGTEXT(FieldTypeEnum.LONGTEXT, "text", null),
-    CHAR(FieldTypeEnum.CHAR, "keyword", null),
-    TIMESTAMP(FieldTypeEnum.TIMESTAMP, "date", null);
+    VARCHAR(FieldTypeEnum.VARCHAR, "text", null, false),
+    INT(FieldTypeEnum.INT, "integer", null, false),
+    BIGINT(FieldTypeEnum.BIGINT, "long", null, false),
+    FLOAT(FieldTypeEnum.FLOAT, "float", null, false),
+    DOUBLE(FieldTypeEnum.DOUBLE, "double", null, false),
+    DECIMAL(FieldTypeEnum.DECIMAL, "double", null, false),
+    BOOLEAN(FieldTypeEnum.BOOLEAN, "boolean", null, false),
+    DATE(FieldTypeEnum.DATE, "date", null, false),
+    TEXT(FieldTypeEnum.TEXT, "text", null, false),
+    LONGTEXT(FieldTypeEnum.LONGTEXT, "text", null, false),
+    CHAR(FieldTypeEnum.CHAR, "keyword", null, false),
+    TIMESTAMP(FieldTypeEnum.TIMESTAMP, "date", null, false);
 
     private FieldTypeEnum fieldType;
 
     private String mapperType;
 
     private String[] allMapperTypes;
+
+    private boolean isNeedLength;
 
     @Override
     public DatasourceEnum type() {

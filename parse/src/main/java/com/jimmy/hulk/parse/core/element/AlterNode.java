@@ -8,12 +8,14 @@ import java.io.Serializable;
 @Data
 public class AlterNode implements Serializable {
 
-    private ColumnNode columnNode;
+    private String table;
 
-    private AlterTypeEnum alterTypeEnum;
+    private IndexNode indexNode;
+
+    private ColumnNode columnNode;
 
     private ColumnNode oldColumnNode;
 
-    private String table;
+    private AlterTypeEnum alterTypeEnum;
 
 }
