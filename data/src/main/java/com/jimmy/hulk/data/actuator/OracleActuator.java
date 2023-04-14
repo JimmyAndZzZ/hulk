@@ -1,16 +1,17 @@
 package com.jimmy.hulk.data.actuator;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.core.Column;
+import com.jimmy.hulk.common.core.Table;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.base.DataSource;
-import com.jimmy.hulk.data.core.PageResult;
-import com.jimmy.hulk.data.core.Page;
-import com.jimmy.hulk.common.core.Table;
 import com.jimmy.hulk.data.config.DataSourceProperty;
+import com.jimmy.hulk.data.core.Page;
+import com.jimmy.hulk.data.core.PageResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -20,6 +21,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class OracleActuator extends Actuator<String> {
@@ -34,33 +36,9 @@ public class OracleActuator extends Actuator<String> {
     }
 
     @Override
-    public void createTable(Table table) {
-        List<Column> columns = table.getColumns();
-        if (CollUtil.isEmpty(columns)) {
-            throw new HulkException("字段为空", ModuleEnum.DATA);
-        }
-
-        List<String> primaryKeys = Lists.newArrayList();
-        StringBuilder sb = new StringBuilder("CREATE TABLE ").append(table.getTableName()).append(" (").append("\n");
-
-        for (Column column : columns) {
-            String name = column.getName();
-            //主键判断
-            if (column.getIsPrimary()) {
-                primaryKeys.add(name);
-            }
-
-            sb.append(this.columnHandler(column));
-        }
-
-        if (CollUtil.isEmpty(primaryKeys)) {
-            throw new HulkException("主键为空", ModuleEnum.DATA);
-        }
-
-        sb.append("PRIMARY KEY (").append(CollUtil.join(primaryKeys, ",")).append(") \n");
-        sb.append(")");
-
-        this.execute(sb.toString());
+    public void dropTable(String tableName) {
+        String sql = "DROP TABLE {}";
+        this.execute(StrUtil.format(sql, tableName));
     }
 
     @Override
@@ -105,6 +83,23 @@ public class OracleActuator extends Actuator<String> {
             StringBuilder sb = new StringBuilder("ALTER TABLE ").append(StrUtil.replace(tableName, "`", "\"").toUpperCase()).append(" DROP COLUMN \"").append(StrUtil.removeAll(column.getName(), "`")).append("\"");
             this.execute(sb.toString());
         }
+    }
+
+    @Override
+    public void changeColumn(String tableName, String oldColumn, Column column) {
+        StringBuilder rename = new StringBuilder("ALTER TABLE ").append(StrUtil.replace(tableName, "`", "\"").toUpperCase()).append(" rename COLUMN ").append(StrUtil.replace(oldColumn, "`", "\"")).append(" to ").append(StrUtil.replace(column.getName(), "`", "\""));
+        this.execute(rename.toString());
+
+        StringBuilder modify = new StringBuilder("ALTER TABLE ").append(StrUtil.replace(tableName, "`", "\"").toUpperCase()).append(" MODIFY ");
+        modify.append(this.columnHandler(column));
+        this.execute(modify.deleteCharAt(modify.length() - 1).toString());
+    }
+
+    @Override
+    public List<String> getPriKey(String tableName) {
+        String sql = "Select  col.column_name from all_constraints con,all_cons_columns col where con.constraint_name=col.constraint_name and con.constraint_type='P'  and col.table_name='{}'";
+        List<Map<String, Object>> maps = this.queryForList(StrUtil.format(sql, tableName.toUpperCase()));
+        return CollUtil.isEmpty(maps) ? Lists.newArrayList() : maps.stream().map(map -> MapUtil.getStr(map, "COLUMN_NAME")).collect(Collectors.toList());
     }
 
     @Override
@@ -178,6 +173,23 @@ public class OracleActuator extends Actuator<String> {
         }
     }
 
+    @Override
+    public String mapperType(String mapperType, Column column) {
+        String length = column.getLength();
+
+        if (mapperType.equalsIgnoreCase("varchar2") && StrUtil.isNotBlank(length)) {
+            Integer l = Integer.valueOf(length);
+
+            if (l * 3 > 4000) {
+                return "clob";
+            } else {
+                return "varchar2(" + l * 3 + ")";
+            }
+        }
+
+        return null;
+    }
+
     /**
      * 字段解析
      *
@@ -188,28 +200,9 @@ public class OracleActuator extends Actuator<String> {
         StringBuilder sb = new StringBuilder();
 
         String name = StrUtil.removeAll(column.getName(), "`");
-        String length = column.getLength();
         Boolean isAllowNull = column.getIsAllowNull();
         String defaultValue = column.getDefaultValue();
-
-        String s = this.mapperType(column.getFieldTypeEnum());
-
-        if (s.equalsIgnoreCase("varchar2") && StrUtil.isNotBlank(length)) {
-            Integer l = Integer.valueOf(length);
-
-            if (l * 3 > 4000) {
-                sb.append("\"").append(name).append("\"").append(StrUtil.SPACE).append("clob").append(StrUtil.SPACE);
-            } else {
-                sb.append("\"").append(name).append("\"").append(StrUtil.SPACE).append(s).append(StrUtil.SPACE);
-                sb.append("(").append(l * 3).append(")").append(StrUtil.SPACE);
-            }
-        } else {
-            sb.append("\"").append(name).append("\"").append(StrUtil.SPACE).append(s).append(StrUtil.SPACE);
-            //判断类型是否为空
-            if (StrUtil.isNotEmpty(length) && !s.equalsIgnoreCase("clob")) {
-                sb.append("(").append(length).append(")").append(StrUtil.SPACE);
-            }
-        }
+        sb.append("\"").append(name).append("\"").append(StrUtil.SPACE).append(this.mapperType(column)).append(StrUtil.SPACE);
         //默认和非空处理
         if (StrUtil.isEmpty(defaultValue)) {
             if (!isAllowNull) {

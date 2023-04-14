@@ -3,29 +3,15 @@ package com.jimmy.hulk.data.actuator;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.db.DbUtil;
-import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.core.Column;
 import com.jimmy.hulk.common.core.Table;
-import com.jimmy.hulk.common.enums.FieldTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.base.DataSource;
 import com.jimmy.hulk.data.config.DataSourceProperty;
 import com.jimmy.hulk.data.core.Page;
 import com.jimmy.hulk.data.core.PageResult;
-import com.jimmy.hulk.data.other.ExecuteBody;
-import com.sumscope.ss.data.sync.base.DataSource;
-import com.sumscope.ss.data.sync.base.FieldMapper;
-import com.sumscope.ss.data.sync.config.DataSourceProperty;
-import com.sumscope.ss.data.sync.core.Column;
-import com.sumscope.ss.data.sync.core.Page;
-import com.sumscope.ss.data.sync.core.PageResult;
-import com.sumscope.ss.data.sync.core.Table;
-import com.sumscope.ss.data.sync.enums.FieldTypeEnum;
-import com.sumscope.ss.data.sync.exception.DataException;
-import com.sumscope.ss.data.sync.other.ExecuteBody;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -52,12 +38,6 @@ public class SqlServerActuator extends Actuator<String> {
     public void dropTable(String tableName) {
         String sql = "DROP TABLE  IF EXISTS {}";
         this.execute(StrUtil.format(sql, tableName));
-    }
-
-    @Override
-    public boolean tableIsExist(String tableName, String schema) {
-        String sql = "select 1 from sysobjects where id = object_id('{}') and type = 'u' ";
-        return MapUtil.isNotEmpty(this.query(StrUtil.format(sql, tableName)));
     }
 
     @Override
@@ -301,17 +281,17 @@ public class SqlServerActuator extends Actuator<String> {
 
     @Override
     public List<Map<String, Object>> queryForList(String sql) {
-        log.info("准备执行 SQL：{}", sql);
+        log.debug("准备执行 SQL：{}", sql);
         List<Map<String, Object>> maps = jdbcTemplate.queryForList(sql);
-        log.info("成功执行 SQL：{}", sql);
+        log.debug("成功执行 SQL：{}", sql);
         return maps;
     }
 
     @Override
     public Map<String, Object> query(String sql) {
-        log.info("准备执行 SQL：{}", sql);
+        log.debug("准备执行 SQL：{}", sql);
         List<Map<String, Object>> maps = jdbcTemplate.queryForList(sql);
-        log.info("成功执行 SQL：{}", sql);
+        log.debug("成功执行 SQL：{}", sql);
         return CollUtil.isNotEmpty(maps) ? maps.get(0) : null;
     }
 
@@ -322,7 +302,7 @@ public class SqlServerActuator extends Actuator<String> {
         try (Statement stmt = connection.createStatement()) {
             connection.setAutoCommit(false);
             for (String s : sql) {
-                log.info("批量执行,sql:{}", s);
+                log.debug("批量执行,sql:{}", s);
                 stmt.addBatch(s);
             }
             stmt.executeBatch();
@@ -336,17 +316,18 @@ public class SqlServerActuator extends Actuator<String> {
     }
 
     @Override
-    public void batchCommitWithPre(List<ExecuteBody> executeBodies) throws SQLException {
-        javax.sql.DataSource dataSource = (javax.sql.DataSource) this.dataSource.getDataSource();
-        for (ExecuteBody body : executeBodies) {
-            String sql = body.getSql();
-            Object[] objects = body.getObjects();
-            sql = StrUtil.trim(sql);
+    public String mapperType(String mapperType, Column column) {
+        if (mapperType.equalsIgnoreCase("nvarchar")) {
+            int l = Integer.valueOf(column.getLength());
 
-            log.info("准备实现SQL:{},value:{}", sql, JSON.toJSON(objects));
+            if (l * 2 > 4000) {
+                return "text";
+            }
 
-            DbUtil.use(dataSource).execute(sql, objects);
+            return "nvarchar(" + l * 2 + ")";
         }
+
+        return null;
     }
 
     /**
@@ -355,11 +336,10 @@ public class SqlServerActuator extends Actuator<String> {
      * @param column
      * @return
      */
-    protected String columnHandler(Column column) {
+    private String columnHandler(Column column) {
         StringBuilder sb = new StringBuilder();
 
         String name = column.getName();
-        String length = column.getLength();
         Boolean isPrimary = column.getIsPrimary();
         Boolean isAllowNull = column.getIsAllowNull();
 
@@ -367,7 +347,7 @@ public class SqlServerActuator extends Actuator<String> {
             name = StrUtil.removeAll(name, "`");
         }
 
-        sb.append(name).append(StrUtil.SPACE).append(this.mapperType(column.getFieldTypeEnum(), length)).append(StrUtil.SPACE);
+        sb.append(name).append(StrUtil.SPACE).append(this.mapperType(column)).append(StrUtil.SPACE);
         //主键
         if (isPrimary) {
             sb.append(" primary key ");

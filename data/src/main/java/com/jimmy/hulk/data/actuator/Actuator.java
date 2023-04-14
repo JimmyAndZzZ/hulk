@@ -1,11 +1,14 @@
 package com.jimmy.hulk.data.actuator;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
+import com.jimmy.hulk.common.core.Alter;
 import com.jimmy.hulk.common.core.Column;
 import com.jimmy.hulk.common.core.Index;
 import com.jimmy.hulk.common.core.Table;
+import com.jimmy.hulk.common.enums.AlterTypeEnum;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
@@ -75,9 +78,74 @@ public abstract class Actuator<T> implements Serializable {
         return null;
     }
 
+    public void executeAlter(List<Alter> alters) {
+        if (CollUtil.isNotEmpty(alters)) {
+            for (Alter alter : alters) {
+                Table table = new Table();
+                table.setTableName(alter.getTable());
+                table.getColumns().add(alter.getColumn());
+                table.getIndices().add(alter.getIndex());
+
+                AlterTypeEnum alterType = alter.getAlterType();
+                switch (alterType) {
+                    case MODIFY_COLUMN:
+                        this.modifyColumn(table);
+                        break;
+                    case ADD_COLUMN:
+                        this.addColumn(table);
+                        break;
+                    case CHANGE_COLUMN:
+                        this.changeColumn(table.getTableName(), alter.getOldColumn().getName(), alter.getColumn());
+                        break;
+                    case DROP_COLUMN:
+                        this.deleteColumn(table);
+                        break;
+                    case ADD_INDEX:
+                        this.addIndex(table);
+                        break;
+                    case DROP_INDEX:
+                        this.deleteIndex(table);
+                        break;
+                }
+            }
+        }
+    }
+
+    public void dropTable(String tableName) {
+        throw new HulkException("not support", ModuleEnum.DATA);
+    }
+
     public abstract void execute(T o);
 
     public abstract int update(T o);
+
+    public void changeColumn(String tableName, String oldColumn, Column column) {
+        throw new HulkException("not support", ModuleEnum.DATA);
+    }
+
+    public String mapperType(Column column) {
+        String length = column.getLength();
+        FieldTypeEnum type = column.getFieldTypeEnum();
+
+        if (type == null) {
+            throw new HulkException("类型为空", ModuleEnum.DATA);
+        }
+
+        Map<FieldTypeEnum, FieldMapper> fieldTypeMapper = dataSource.getFieldTypeMapper();
+        FieldMapper fieldMapper = fieldTypeMapper.get(type);
+        if (fieldMapper == null) {
+            throw new HulkException(type.getMessage() + "类型匹配失败", ModuleEnum.DATA);
+        }
+
+        String mapperType = fieldMapper.getMapperType();
+        //特殊字段处理
+        String s = this.mapperType(mapperType, column);
+        return StrUtil.isNotBlank(s) ? s : fieldMapper.isNeedLength() ? mapperType + "(" + length + ")" : mapperType;
+    }
+
+    public String mapperType(String mapperType, Column column) {
+        return null;
+    }
 
     public abstract PageResult<Map<String, Object>> queryPage(T o, Page page);
 

@@ -390,7 +390,7 @@ public class MySQLActuator extends Actuator<String> {
         Boolean isAllowNull = column.getIsAllowNull();
         String defaultValue = column.getDefaultValue();
 
-        sb.append("`").append(name).append("` ").append(this.mapperType(column.getFieldTypeEnum())).append(StrUtil.SPACE);
+        sb.append("`").append(name).append("` ").append(StrUtil.SPACE).append(this.mapperType(column)).append(StrUtil.SPACE);
         //判断类型是否为空
         if (StrUtil.isNotEmpty(length)) {
             sb.append("(").append(length).append(")").append(StrUtil.SPACE);
