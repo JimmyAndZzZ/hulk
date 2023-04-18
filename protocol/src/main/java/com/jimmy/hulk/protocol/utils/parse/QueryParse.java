@@ -27,6 +27,7 @@ public final class QueryParse {
     public static final int FLUSH = 20;
     public static final int NATIVE = 21;
     public static final int CACHE = 22;
+    public static final int ALTER = 23;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); ++i) {

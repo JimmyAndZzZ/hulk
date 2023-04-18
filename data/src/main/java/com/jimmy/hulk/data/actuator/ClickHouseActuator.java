@@ -196,8 +196,9 @@ public class ClickHouseActuator extends Actuator<String> {
         Map<String, Object> maps = this.query(sql);
         if (maps != null) {
             String keys = Convert.toStr(maps.get("primary_key"));
-            priKeyList = StrUtil.split(keys, ",");
+            priKeyList = StrUtil.split(keys, ",").stream().map(s -> StrUtil.trim(s)).collect(Collectors.toList());
         }
+
         return priKeyList;
     }
 

@@ -3,6 +3,7 @@ package com.jimmy.hulk.parse.core.element;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
+import com.jimmy.hulk.common.core.Column;
 import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ColumnTypeEnum;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
@@ -47,6 +48,18 @@ public class ColumnNode implements Serializable {
     private FieldTypeEnum fieldType;
 
     private String length;
+
+    public Column build() {
+        Column column = new Column();
+        column.setDefaultValue(null);
+        column.setFieldTypeEnum(this.fieldType);
+        column.setIsAllowNull(false);
+        column.setLength(this.length);
+        column.setName(this.name);
+        column.setNotes(null);
+        column.setIsPrimary(null);
+        return column;
+    }
 
     public void setFunction(String function) {
         this.function = function;
