@@ -25,8 +25,6 @@ import static com.jimmy.hulk.common.enums.DatasourceEnum.ORACLE;
 @DS(type = ORACLE, condition = OracleCondition.class)
 public class OracleData extends TransactionData {
 
-    private static final String DELETE_TEMPLATE = "delete from \"{}\" where \"{}\" = {}";
-
     private static final String DELETE_CONDITION_TEMPLATE = "delete from \"{}\" {}";
 
     private static final String QUERY_LIST_TEMPLATE = "select {} from \"{}\" {}";
@@ -35,9 +33,12 @@ public class OracleData extends TransactionData {
 
     private static final String QUERY_COUNT_TEMPLATE = "select count(1) as cs from \"{}\" {}";
 
-    private static final String QUERY_BY_ID_TEMPLATE = "select * from \"{}\" where \"{}\" = {}";
-
     private static final String QUERY_PAGE_TEMPLATE = "SELECT * FROM (SELECT temp.*, ROWNUM RN  FROM ({}) temp  WHERE ROWNUM <={}) WHERE RN >={}";
+
+    @Override
+    protected void init() {
+        this.indexName = dataSource.getDataSourceProperty().getUsername() + "." + indexName.toUpperCase();
+    }
 
     @Override
     public int count(Wrapper wrapper) {

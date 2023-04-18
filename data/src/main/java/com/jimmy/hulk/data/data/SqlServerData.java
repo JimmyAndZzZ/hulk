@@ -32,6 +32,10 @@ public class SqlServerData extends TransactionData {
     private static final String QUERY_COUNT_TEMPLATE = "select count(1) as cs from {} {}";
 
     @Override
+    protected void init() {
+    }
+
+    @Override
     public int count(Wrapper wrapper) {
         ConditionPart conditionPart = this.conditionTrans(wrapper.getQueryPlus(), false);
         String countSql = StrUtil.format(QUERY_COUNT_TEMPLATE, indexName, conditionPart.getConditionExp());

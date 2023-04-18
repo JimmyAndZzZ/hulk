@@ -27,7 +27,7 @@ public abstract class TransactionData extends BaseData {
             throw new HulkException("非MYSQL数据库不允许返回主键值");
         }
 
-        this.indexName = schema + "." + indexName;
+        this.init();
 
         ConnectionContext context = new ConnectionContext();
         if (this.isNeedReturnPriKeyValue) {
@@ -38,6 +38,10 @@ public abstract class TransactionData extends BaseData {
         transactionManager = new TransactionManager(super.dataSource, context);
 
         jdbcTemplate = new JdbcTemplate(dataSource);
+    }
+
+    protected void init() {
+        this.indexName = schema + "." + indexName;
     }
 
     protected List<Map<String, Object>> queryList(String sql, List<Object> param) {

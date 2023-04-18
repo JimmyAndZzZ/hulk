@@ -49,15 +49,19 @@ public class ColumnNode implements Serializable {
 
     private String length;
 
+    private Boolean isAllowNull = true;
+
+    private Boolean isPrimary = false;
+
     public Column build() {
         Column column = new Column();
         column.setDefaultValue(null);
         column.setFieldTypeEnum(this.fieldType);
-        column.setIsAllowNull(false);
+        column.setIsAllowNull(this.isAllowNull);
         column.setLength(this.length);
         column.setName(this.name);
         column.setNotes(null);
-        column.setIsPrimary(null);
+        column.setIsPrimary(this.isPrimary);
         return column;
     }
 

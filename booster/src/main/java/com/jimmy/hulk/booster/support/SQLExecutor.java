@@ -2,13 +2,11 @@ package com.jimmy.hulk.booster.support;
 
 import com.jimmy.hulk.actuator.other.IntObjectHashMap;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
-import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.booster.base.Action;
+import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.protocol.reponse.ErrorResponse;
-import com.jimmy.hulk.protocol.reponse.OkResponse;
 import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,8 +40,14 @@ public class SQLExecutor {
             //获取SQL类型
             int rs = QueryParse.parse(sql);
             switch (rs & 0xff) {
-                case QueryParse.SET:
-                    actions.get(QueryParse.SET).action(sql, session, rs >>> 8);
+                case QueryParse.DROP_TABLE:
+                    actions.get(QueryParse.DROP_TABLE).action(sql, session, rs >>> 8);
+                    break;
+                case QueryParse.ALTER:
+                    actions.get(QueryParse.ALTER).action(sql, session, rs >>> 8);
+                    break;
+                case QueryParse.CREATE_TABLE:
+                    actions.get(QueryParse.CREATE_TABLE).action(sql, session, rs >>> 8);
                     break;
                 case QueryParse.START:
                 case QueryParse.BEGIN:

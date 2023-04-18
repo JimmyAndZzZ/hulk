@@ -28,6 +28,8 @@ public final class QueryParse {
     public static final int NATIVE = 21;
     public static final int CACHE = 22;
     public static final int ALTER = 23;
+    public static final int CREATE_TABLE = 24;
+    public static final int DROP_TABLE = 25;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); ++i) {
@@ -41,15 +43,18 @@ public final class QueryParse {
                 case '#':
                     i = ParseUtil.comment(stmt, i);
                     continue;
+                case 'A':
+                case 'a':
+                    return alterCheck(stmt, i);
                 case 'B':
                 case 'b':
                     return beginCheck(stmt, i);
                 case 'C':
                 case 'c':
-                    return createSchemaAndCommitAndCache(stmt, i);
+                    return createSchemaAndCommitAndCacheAndCreateTable(stmt, i);
                 case 'D':
                 case 'd':
-                    return deleteCheck(stmt, i);
+                    return deleteAndDropTableCheck(stmt, i);
                 case 'E':
                 case 'e':
                     return explainCheck(stmt, i);
@@ -84,7 +89,11 @@ public final class QueryParse {
         return OTHER;
     }
 
-    static int createSchemaAndCommitAndCache(String stmt, int offset) {
+    static int createSchemaAndCommitAndCacheAndCreateTable(String stmt, int offset) {
+        if (StrUtil.startWithIgnoreCase(stmt, "CREATE TABLE")) {
+            return CREATE_TABLE;
+        }
+
         if (stmt.startsWith("create") || stmt.startsWith("CREATE")) {
             stmt = stmt.substring(6).trim();
             if (stmt.length() > 7) {
@@ -110,6 +119,23 @@ public final class QueryParse {
         }
 
         return commitCheck(stmt, offset);
+    }
+
+    static int alterCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'L' || c2 == 'l') && (c3 == 'T' || c3 == 't')
+                    && (c4 == 'E' || c4 == 'e') && (c5 == 'R' || c5 == 'r')
+                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                return ALTER;
+            }
+        }
+        return OTHER;
+
     }
 
     // COMMIT
@@ -221,7 +247,11 @@ public final class QueryParse {
     }
 
     // DELETE' '
-    static int deleteCheck(String stmt, int offset) {
+    static int deleteAndDropTableCheck(String stmt, int offset) {
+        if (StrUtil.startWithIgnoreCase(stmt, "DROP TABLE")) {
+            return DROP_TABLE;
+        }
+
         if (stmt.length() > offset + 6) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);

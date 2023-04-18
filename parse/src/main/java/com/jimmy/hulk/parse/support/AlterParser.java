@@ -11,6 +11,7 @@ import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.parse.core.element.AlterNode;
 import com.jimmy.hulk.parse.core.element.ColumnNode;
 import com.jimmy.hulk.parse.core.element.IndexNode;
+import com.jimmy.hulk.parse.core.element.TableNode;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
@@ -19,7 +20,10 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.alter.AlterOperation;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
+import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
+import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.create.table.Index;
+import net.sf.jsqlparser.statement.drop.Drop;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,7 +31,81 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AlterParser {
 
-    public List<AlterNode> parse(String sql) {
+    public TableNode tableParse(String sql) {
+        sql = StrUtil.trim(sql);
+
+        try {
+            Statement statement = CCJSqlParserUtil.parse(sql);
+            if (StrUtil.startWithIgnoreCase(sql, "DROP TABLE")) {
+                Drop drop = (Drop) statement;
+                TableNode tableNode = new TableNode();
+                tableNode.setTableName(StrUtil.removeAll(drop.getName().toString(), "`"));
+                return tableNode;
+            }
+
+            if (StrUtil.startWithIgnoreCase(sql, "CREATE TABLE")) {
+                CreateTable createTable = (CreateTable) statement;
+
+                TableNode tableNode = new TableNode();
+                tableNode.setTableName(StrUtil.removeAll(createTable.getTable().toString(), "`"));
+
+                List<ColumnDefinition> columnDefinitions = createTable.getColumnDefinitions();
+                if (CollUtil.isEmpty(columnDefinitions)) {
+                    throw new HulkException("创建表字段为空", ModuleEnum.PARSE);
+                }
+
+                List<Index> indexes = createTable.getIndexes();
+                if (CollUtil.isEmpty(indexes)) {
+                    throw new HulkException("创建表主键为空", ModuleEnum.PARSE);
+                }
+
+                List<Index> primaryKey = indexes.stream().filter(index -> index.getType().equalsIgnoreCase("PRIMARY KEY")).collect(Collectors.toList());
+                if (CollUtil.isEmpty(primaryKey)) {
+                    throw new HulkException("创建表主键为空", ModuleEnum.PARSE);
+                }
+
+                List<String> primaryKeys = primaryKey.stream().findFirst().get().getColumns().stream().map(bean -> StrUtil.removeAll(bean.getColumnName(), "`")).collect(Collectors.toList());
+                for (ColumnDefinition columnDefinition : columnDefinitions) {
+                    String columnName = StrUtil.removeAll(columnDefinition.getColumnName(), "`");
+                    ColDataType colDataType = columnDefinition.getColDataType();
+
+                    String dataType = colDataType.getDataType();
+                    List<String> argumentsStringList = colDataType.getArgumentsStringList();
+
+                    FieldTypeEnum byCode = FieldTypeEnum.getByCode(dataType);
+                    if (byCode == null) {
+                        throw new HulkException(dataType + ":类型匹配失败", ModuleEnum.PARSE);
+                    }
+
+                    ColumnNode columnNode = new ColumnNode();
+                    columnNode.setName(columnName);
+                    columnNode.setFieldType(byCode);
+
+                    if (CollUtil.isNotEmpty(argumentsStringList)) {
+                        columnNode.setLength(argumentsStringList.stream().findFirst().get());
+                    }
+
+                    if (primaryKeys.contains(columnName)) {
+                        columnNode.setIsPrimary(true);
+                        columnNode.setIsAllowNull(false);
+                    }
+
+                    tableNode.getColumnNodes().add(columnNode);
+                }
+
+                return tableNode;
+            }
+
+            return null;
+        } catch (HulkException hulkException) {
+            throw hulkException;
+        } catch (Exception e) {
+            log.error("SQL解析失败,{}\n", sql, e);
+            throw new HulkException("解析失败", ModuleEnum.PARSE);
+        }
+    }
+
+    public List<AlterNode> alterParse(String sql) {
         List<AlterNode> alters = Lists.newArrayList();
 
         try {

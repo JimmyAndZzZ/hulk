@@ -2,10 +2,12 @@ package com.jimmy.hulk.parse.core.element;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class TableNode implements Serializable {
 
@@ -25,6 +27,14 @@ public class TableNode implements Serializable {
 
     @Getter
     private String uuid;
+
+    @Getter
+    @Setter
+    private List<ColumnNode> columnNodes = Lists.newArrayList();
+
+    @Getter
+    @Setter
+    private List<IndexNode> indexNodes = Lists.newArrayList();
 
     public TableNode() {
         this.uuid = IdUtil.simpleUUID();
