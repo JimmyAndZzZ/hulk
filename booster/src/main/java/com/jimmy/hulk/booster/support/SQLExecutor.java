@@ -40,6 +40,9 @@ public class SQLExecutor {
             //获取SQL类型
             int rs = QueryParse.parse(sql);
             switch (rs & 0xff) {
+                case QueryParse.SET:
+                    actions.get(QueryParse.SET).action(sql, session, rs >>> 8);
+                    break;
                 case QueryParse.DROP_TABLE:
                     actions.get(QueryParse.DROP_TABLE).action(sql, session, rs >>> 8);
                     break;
