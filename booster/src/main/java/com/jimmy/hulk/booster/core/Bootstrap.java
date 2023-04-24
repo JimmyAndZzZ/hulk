@@ -9,6 +9,8 @@ import com.jimmy.hulk.config.support.SystemVariableContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class Bootstrap implements InitializingBean {
+public class Bootstrap implements InitializingBean, ApplicationRunner {
 
     @Autowired
     private Prepared prepared;
@@ -52,7 +54,10 @@ public class Bootstrap implements InitializingBean {
         for (Initialize initialize : collect) {
             initialize.init();
         }
+    }
 
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
         log.info("hulk start port:{}", systemVariableContext.getPort());
         //启动服务端
         new DatabaseServer(systemVariableContext.getPort(), sessionPool, authenticationManager).startServer();
