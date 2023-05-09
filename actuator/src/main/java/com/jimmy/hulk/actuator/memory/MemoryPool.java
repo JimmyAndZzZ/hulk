@@ -24,7 +24,7 @@ public class MemoryPool {
 
     private final AtomicInteger index = new AtomicInteger(BUFFER_SIZE + 1);
 
-    private final List<Segment> bufferPool = Lists.newArrayList();
+    private final List<Segment> bufferPool = Lists.newArrayListWithCapacity(BUFFER_SIZE);
 
     private final IntObjectHashMap<Segment> extraPool = new IntObjectHashMap<>(216);
 

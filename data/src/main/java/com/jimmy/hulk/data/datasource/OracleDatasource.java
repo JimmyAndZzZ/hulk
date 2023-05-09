@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
@@ -114,6 +115,7 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
         List<String> strings = FileUtil.readLines(file, StandardCharsets.UTF_8);
         long sum = strings.stream().filter(str -> str.startsWith("INSERT INTO")).count();
 
+        List<String> longSql = Lists.newArrayList();
         AtomicInteger i = new AtomicInteger(0);
         AtomicInteger count = new AtomicInteger(0);
         try {
@@ -167,7 +169,12 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
                         trimmedLine = trimmedLine.substring(0, trimmedLine.length() - 1);
                     }
 
-                    statement.execute(trimmedLine);
+                    if (trimmedLine.getBytes().length > 4000 || trimmedLine.length() > 4000) {
+                        longSql.add(trimmedLine);
+                    } else {
+                        statement.execute(trimmedLine);
+                    }
+
                     i.incrementAndGet();
                 } else if (((!!trimmedLine.startsWith("INSERT INTO"))) && trimmedLine.endsWith(DEFAULT_DELIMITER)) {
                     command.append(line, 0, line.lastIndexOf(DEFAULT_DELIMITER));
@@ -224,7 +231,8 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
      * @param line
      */
     private String timeRegMatch(String line) {
-        Pattern pattern = Pattern.compile("('[\\d-]+\\s[\\d:]+)'");
+        String regex = "('\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}')";
+        Pattern pattern = Pattern.compile(regex);
         List<String> allGroup0 = ReUtil.findAllGroup0(pattern, line);
         if (CollUtil.isNotEmpty(allGroup0)) {
             Set<String> set = Sets.newHashSet(allGroup0);
