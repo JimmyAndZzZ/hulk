@@ -1,6 +1,8 @@
 package com.jimmy.hulk.data.data;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.AggregateEnum;
@@ -21,10 +23,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.jimmy.hulk.common.enums.DatasourceEnum.MONGODB;
@@ -97,19 +96,26 @@ public class MongoDBData extends BaseData {
 
     @Override
     public int add(Map<String, Object> doc, Serializable id) {
+        this.dateTimeZoneHandler(doc);
         document.insertOne(new Document(doc));
         return 1;
     }
 
     @Override
     public int addBatch(List<Map<String, Object>> docs) {
-        document.insertMany(docs.stream().map(doc -> new Document()).collect(Collectors.toList()));
+        document.insertMany(docs.stream().map(doc -> {
+            this.dateTimeZoneHandler(doc);
+            return new Document(doc);
+        }).collect(Collectors.toList()));
         return docs.size();
     }
 
     @Override
     public int updateBatch(List<Map<String, Object>> docs, Wrapper wrapper) {
-        UpdateResult updateResult = document.updateMany(this.conditionTrans(wrapper), docs.stream().map(doc -> new Document()).collect(Collectors.toList()));
+        UpdateResult updateResult = document.updateMany(this.conditionTrans(wrapper), docs.stream().map(doc -> {
+            this.dateTimeZoneHandler(doc);
+            return new Document(doc);
+        }).collect(Collectors.toList()));
         return Long.valueOf(updateResult.getMatchedCount()).intValue();
     }
 
@@ -139,6 +145,7 @@ public class MongoDBData extends BaseData {
 
     @Override
     public int update(Map<String, Object> doc, Wrapper wrapper) {
+        this.dateTimeZoneHandler(doc);
         UpdateResult updateResult = document.updateMany(this.conditionTrans(wrapper), new Document(doc));
         return Long.valueOf(updateResult.getMatchedCount()).intValue();
     }
@@ -260,6 +267,26 @@ public class MongoDBData extends BaseData {
     }
 
     /**
+     * 时间时区处理
+     *
+     * @param doc
+     */
+    private void dateTimeZoneHandler(Map<String, Object> doc) {
+        if (MapUtil.isEmpty(doc)) {
+            return;
+        }
+
+        Set<String> strings = doc.keySet();
+        for (String string : strings) {
+            Object o = doc.get(string);
+            if (o != null && o instanceof Date) {
+                Date date = (Date) o;
+                doc.put(string, DateUtil.offsetHour(date, 8));
+            }
+        }
+    }
+
+    /**
      * 条件解析
      *
      * @param wrapper
@@ -377,9 +404,9 @@ public class MongoDBData extends BaseData {
             case NULL:
                 return Filters.or(Filters.exists(fieldName, false), Filters.eq(fieldName, null), Filters.eq(fieldName, StrUtil.EMPTY));
             case LIKE:
-                return Filters.eq(fieldName, "/" + fieldValue + "/");
+                return Filters.regex(fieldName,  fieldValue.toString());
             case NOT_LIKE:
-                return Filters.not(Filters.eq(fieldName, "/" + fieldValue + "/"));
+                return Filters.not(Filters.regex(fieldName, fieldValue.toString()));
             default:
                 throw new HulkException("不支持该条件", ModuleEnum.DATA);
         }

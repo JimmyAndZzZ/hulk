@@ -4,19 +4,26 @@ import com.jimmy.hulk.data.base.DataSource;
 import com.jimmy.hulk.data.config.DataSourceProperty;
 import com.jimmy.hulk.data.core.Page;
 import com.jimmy.hulk.data.core.PageResult;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import org.bson.Document;
 
 import java.util.List;
 import java.util.Map;
 
 public class MongoDBActuator extends Actuator<String> {
 
+    private MongoDatabase database;
+
     public MongoDBActuator(DataSource source, DataSourceProperty dataSourceProperty) {
         super(source, dataSourceProperty);
+        MongoClient mongoClient = (MongoClient) this.dataSource.getDataSource();
+        this.database = mongoClient.getDatabase(dataSourceProperty.getSchema());
     }
 
     @Override
     public void execute(String o) {
-
     }
 
     @Override
