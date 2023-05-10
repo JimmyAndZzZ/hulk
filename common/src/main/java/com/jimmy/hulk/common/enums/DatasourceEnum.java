@@ -12,7 +12,8 @@ public enum DatasourceEnum {
     CLICK_HOUSE("3", "clickhouse", true, true),
     NEO4J("4", "neo4j", true, false),
     EXCEL("5", "excel", false, false),
-    SQL_SERVER("6", "sqlServer", true, false);
+    SQL_SERVER("6", "sqlServer", true, false),
+    MONGODB("7", "mongoDB", false, false);
 
     private String code;
 
