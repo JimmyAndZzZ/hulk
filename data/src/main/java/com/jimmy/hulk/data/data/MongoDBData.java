@@ -308,8 +308,10 @@ public class MongoDBData extends BaseData {
                 switch (mapKey) {
                     case AND:
                         bs.add(Filters.and(mapValue.stream().map(condition -> this.parse(condition)).collect(Collectors.toList())));
+                        break;
                     case OR:
                         bs.add(Filters.or(mapValue.stream().map(condition -> this.parse(condition)).collect(Collectors.toList())));
+                        break;
                 }
             }
         }
@@ -333,16 +335,20 @@ public class MongoDBData extends BaseData {
                     switch (mapKey) {
                         case AND:
                             groupBson.add(Filters.and(mapValue.stream().map(condition -> this.parse(condition)).collect(Collectors.toList())));
+                            break;
                         case OR:
                             groupBson.add(Filters.or(mapValue.stream().map(condition -> this.parse(condition)).collect(Collectors.toList())));
+                            break;
                     }
                 }
 
                 switch (groupConditionTypeEnum) {
                     case AND:
                         bs.add(Filters.and(groupBson));
+                        break;
                     case OR:
                         bs.add(Filters.or(groupBson));
+                        break;
                 }
             }
         }
@@ -404,7 +410,7 @@ public class MongoDBData extends BaseData {
             case NULL:
                 return Filters.or(Filters.exists(fieldName, false), Filters.eq(fieldName, null), Filters.eq(fieldName, StrUtil.EMPTY));
             case LIKE:
-                return Filters.regex(fieldName,  fieldValue.toString());
+                return Filters.regex(fieldName, fieldValue.toString());
             case NOT_LIKE:
                 return Filters.not(Filters.regex(fieldName, fieldValue.toString()));
             default:
