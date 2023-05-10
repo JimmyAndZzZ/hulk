@@ -3,6 +3,7 @@ package com.jimmy.hulk.data.data;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
+import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ConditionEnum;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
@@ -10,16 +11,12 @@ import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.condition.MongoDBCondition;
 import com.jimmy.hulk.data.core.*;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.UpdateManyModel;
 import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -31,7 +28,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.jimmy.hulk.common.enums.DatasourceEnum.MONGODB;
-import static com.jimmy.hulk.data.utils.ConditionUtil.valueHandler;
 
 @Slf4j
 @DS(type = MONGODB, condition = MongoDBCondition.class)
@@ -48,12 +44,30 @@ public class MongoDBData extends BaseData {
 
     @Override
     public List<Map<String, Object>> queryPageList(Wrapper wrapper, Page page) {
-        return null;
+        List<Map<String, Object>> docs = Lists.newArrayList();
+
+        FindIterable<Document> iterable = this.document.find(this.conditionTrans(wrapper)).skip(page.getPageNo() * page.getPageSize())
+                .limit(page.getPageSize()).sort(this.orderParse(wrapper));
+        MongoCursor<Document> cursor = iterable.iterator();
+        while (cursor.hasNext()) {
+            Document next = cursor.next();
+            docs.add(next);
+        }
+        return docs;
     }
 
     @Override
     public List<Map<String, Object>> queryRange(Wrapper wrapper, Integer start, Integer end) {
-        return null;
+        List<Map<String, Object>> docs = Lists.newArrayList();
+
+        FindIterable<Document> iterable = this.document.find(this.conditionTrans(wrapper)).skip(start)
+                .limit(end - start).sort(this.orderParse(wrapper));
+        MongoCursor<Document> cursor = iterable.iterator();
+        while (cursor.hasNext()) {
+            Document next = cursor.next();
+            docs.add(next);
+        }
+        return docs;
     }
 
     @Override
@@ -131,20 +145,118 @@ public class MongoDBData extends BaseData {
 
     @Override
     public List<Map<String, Object>> queryList(Wrapper wrapper) {
+        List<Map<String, Object>> docs = Lists.newArrayList();
+        //groupBy
+        if (CollUtil.isNotEmpty(wrapper.getQueryPlus().getGroupBy())) {
+            return this.groupBy(wrapper);
+        }
 
-        return null;
+        FindIterable<Document> iterable = this.document.find(this.conditionTrans(wrapper)).sort(this.orderParse(wrapper));
+        MongoCursor<Document> cursor = iterable.iterator();
+        while (cursor.hasNext()) {
+            Document next = cursor.next();
+            docs.add(next);
+        }
+        return docs;
     }
 
     @Override
     public List<Map<String, Object>> queryList() {
-        FindIterable<Document> documents = document.find().;
+        List<Map<String, Object>> docs = Lists.newArrayList();
 
-        return null;
+        FindIterable<Document> documents = document.find();
+        MongoCursor<Document> cursor = documents.iterator();
+        while (cursor.hasNext()) {
+            Document next = cursor.next();
+            docs.add(next);
+        }
+
+        return docs;
     }
 
     @Override
     public Map<String, Object> queryOne(Wrapper wrapper) {
-        return null;
+        FindIterable<Document> iterable = this.document.find(this.conditionTrans(wrapper)).skip(0)
+                .limit(1).sort(this.orderParse(wrapper));
+        MongoCursor<Document> cursor = iterable.iterator();
+        return cursor.hasNext() ? cursor.next() : null;
+    }
+
+    /**
+     * groupBy
+     *
+     * @param wrapper
+     * @return
+     */
+    private List<Map<String, Object>> groupBy(Wrapper wrapper) {
+        List<String> groupBy = wrapper.getQueryPlus().getGroupBy();
+        if (groupBy.size() > 1) {
+            throw new HulkException("当前group by只支持一个字段", ModuleEnum.DATA);
+        }
+
+        List<Map<String, Object>> docs = Lists.newArrayList();
+
+        List<AggregateFunction> aggregateFunctions = wrapper.getQueryPlus().getAggregateFunctions();
+        Document group = new Document();
+        group.put("_id", "$" + groupBy.stream().findFirst().get());
+        if (CollUtil.isNotEmpty(aggregateFunctions)) {
+            for (AggregateFunction aggregateFunction : aggregateFunctions) {
+                String column = aggregateFunction.getColumn();
+                String alias = aggregateFunction.getAlias();
+                AggregateEnum aggregateType = aggregateFunction.getAggregateType();
+                switch (aggregateType) {
+                    case SUM:
+                        group.put(alias, new Document("$sum", "$" + column));
+                        break;
+                    case COUNT:
+                        group.put(alias, new Document("$sum", 1));
+                        break;
+                    case MAX:
+                        group.put(alias, new Document("$max", "$" + column));
+                        break;
+                    case AVG:
+                        group.put(alias, new Document("$avg", "$" + column));
+                        break;
+                    case MIN:
+                        group.put(alias, new Document("$min", "$" + column));
+                        break;
+                }
+            }
+        }
+        group.put("count", new Document("$sum", 1));
+
+        List<Bson> aggregateList = Lists.newArrayList();
+        aggregateList.add(new Document("$match", this.conditionTrans(wrapper)));
+        aggregateList.add(new Document("$group", group));
+        aggregateList.add(new Document("$sort", this.orderParse(wrapper)));
+        AggregateIterable<Document> aggregate = this.document.aggregate(aggregateList);
+
+        MongoCursor<Document> iterator = aggregate.iterator();
+        while (iterator.hasNext()) {
+            Document next = iterator.next();
+            docs.add(next);
+        }
+
+        return docs;
+    }
+
+    /**
+     * 排序解析
+     *
+     * @param wrapper
+     * @return
+     */
+    private Document orderParse(Wrapper wrapper) {
+        Document document = new Document();
+
+        List<Order> orders = wrapper.getQueryPlus().getOrders();
+        if (CollUtil.isNotEmpty(orders)) {
+            for (Order order : orders) {
+                document.append(order.getFieldName(), order.getIsDesc() ? -1 : 1);
+            }
+        }
+
+        return document;
     }
 
     /**
@@ -153,7 +265,7 @@ public class MongoDBData extends BaseData {
      * @param wrapper
      * @return
      */
-    private Bson conditionTrans(Wrapper wrapper) {
+    private BsonDocument conditionTrans(Wrapper wrapper) {
         List<Bson> bs = Lists.newArrayList();
         QueryPlus queryPlus = wrapper.getQueryPlus();
         List<Condition> conditions = queryPlus.getConditions();
@@ -208,7 +320,7 @@ public class MongoDBData extends BaseData {
             }
         }
 
-        return CollUtil.isEmpty(bs) ? null : Filters.and(bs);
+        return CollUtil.isEmpty(bs) ? new BsonDocument() : Filters.and(bs).toBsonDocument();
     }
 
     /**
@@ -261,9 +373,9 @@ public class MongoDBData extends BaseData {
 
                 return Filters.nin(fieldName, notInList);
             case NOT_NULL:
-                return Filters.or(Filters.ne(fieldName, null), Filters.ne(fieldName, StrUtil.EMPTY));
+                return Filters.and(Filters.exists(fieldName), Filters.ne(fieldName, null), Filters.ne(fieldName, StrUtil.EMPTY));
             case NULL:
-                return Filters.or(Filters.eq(fieldName, null), Filters.eq(fieldName, StrUtil.EMPTY));
+                return Filters.or(Filters.exists(fieldName, false), Filters.eq(fieldName, null), Filters.eq(fieldName, StrUtil.EMPTY));
             case LIKE:
                 return Filters.eq(fieldName, "/" + fieldValue + "/");
             case NOT_LIKE:
@@ -272,4 +384,6 @@ public class MongoDBData extends BaseData {
                 throw new HulkException("不支持该条件", ModuleEnum.DATA);
         }
     }
+
+
 }
