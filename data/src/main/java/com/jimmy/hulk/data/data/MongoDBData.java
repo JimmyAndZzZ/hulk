@@ -235,12 +235,19 @@ public class MongoDBData extends BaseData {
         List<Bson> aggregateList = Lists.newArrayList();
         aggregateList.add(new Document("$match", this.conditionTrans(wrapper)));
         aggregateList.add(new Document("$group", group));
-        aggregateList.add(new Document("$sort", this.orderParse(wrapper)));
+
+        Document document = this.orderParse(wrapper);
+        if (MapUtil.isNotEmpty(document)) {
+            aggregateList.add(new Document("$sort", document));
+        }
+
         AggregateIterable<Document> aggregate = this.document.aggregate(aggregateList);
 
         MongoCursor<Document> iterator = aggregate.iterator();
         while (iterator.hasNext()) {
             Document next = iterator.next();
+            next.put(groupBy.stream().findFirst().get(), next.get("_id"));
+            next.remove("_id");
             docs.add(next);
         }
 
