@@ -1,9 +1,9 @@
-package com.jimmy.hulk.actuator.other;
+package com.jimmy.hulk.common.other;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import com.google.common.collect.Sets;
-import com.jimmy.hulk.actuator.base.LineHandle;
+import com.jimmy.hulk.common.base.LineHandle;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;

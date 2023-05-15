@@ -196,7 +196,12 @@ public abstract class BaseData implements Data {
             if (CollUtil.isNotEmpty(orders)) {
                 StringBuilder orderBy = new StringBuilder(" order by ");
                 for (Order order : orders) {
-                    orderBy.append(order.getFieldName()).append(" ").append(order.getIsDesc() ? "DESC" : "ASC").append(",");
+                    String fieldName = order.getFieldName();
+                    if (this.type().equals(DatasourceEnum.ORACLE)) {
+                        fieldName = "\"" + fieldName + "\"";
+                    }
+
+                    orderBy.append(fieldName).append(" ").append(order.getIsDesc() ? "DESC" : "ASC").append(",");
                 }
 
                 sb.append(orderBy.substring(0, orderBy.length() - 1));

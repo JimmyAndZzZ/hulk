@@ -25,6 +25,7 @@
         <module>config</module>
         <module>route</module>
         <module>authority</module>
+        <module>buffer</module>
     </modules>
 
     <properties>

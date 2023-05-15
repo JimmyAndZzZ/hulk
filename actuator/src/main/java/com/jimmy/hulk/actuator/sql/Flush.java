@@ -8,7 +8,7 @@ import com.google.common.collect.Lists;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.Expression;
 import com.jimmy.hulk.actuator.enums.FlushTypeEnum;
-import com.jimmy.hulk.actuator.other.FileReader;
+import com.jimmy.hulk.common.other.FileReader;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.ModuleEnum;

@@ -1,6 +1,6 @@
 package com.jimmy.hulk.booster.support;
 
-import com.jimmy.hulk.actuator.other.IntObjectHashMap;
+import com.jimmy.hulk.common.other.IntObjectHashMap;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.booster.base.Action;
 import com.jimmy.hulk.booster.core.Session;
@@ -33,6 +33,8 @@ public class SQLExecutor {
 
     public void execute(String sql, Session session) {
         try {
+            log.debug("收到SQL:{}", sql);
+
             ExecuteHolder.setDatasourceName(session.getSchema());
             ExecuteHolder.setUsername(session.getUser());
             //去除特殊符号

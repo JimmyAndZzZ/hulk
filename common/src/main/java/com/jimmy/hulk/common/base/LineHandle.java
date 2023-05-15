@@ -1,4 +1,4 @@
-package com.jimmy.hulk.actuator.base;
+package com.jimmy.hulk.common.base;
 
 public interface LineHandle {
     void handle(String line);

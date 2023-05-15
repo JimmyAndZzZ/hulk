@@ -4,7 +4,7 @@ package com.jimmy.hulk.actuator.memory;
 import cn.hutool.core.collection.CollUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.actuator.base.Segment;
-import com.jimmy.hulk.actuator.other.IntObjectHashMap;
+import com.jimmy.hulk.common.other.IntObjectHashMap;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;

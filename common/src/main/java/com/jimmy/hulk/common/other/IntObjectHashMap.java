@@ -1,20 +1,9 @@
-package com.jimmy.hulk.actuator.other;
+package com.jimmy.hulk.common.other;
 
-import com.jimmy.hulk.actuator.base.IntObjectMap;
+import com.jimmy.hulk.common.base.IntObjectMap;
 
 import java.util.*;
 
-/**
- * 使用IntObjectHashMap，HashMap的结构是 Node[] table;
- * Node 下面有Hash，Key，Value，Next四个属性。而IntObjectHashMap的结构是int[] keys 和 Object[] values。
- * 在插入时，同样把int先取模落桶，如果遇到冲突，则不采样HashMap的链地址法，
- * 而是用开放地址法（线性探测法）index＋1找下一个空桶，最后在keys[index]，
- * values[index]中分别记录。在查找时也是先落桶，然后在key[index++]中逐个比较key。
- * 所以，对比整个数据结构，省的不止是int vs Integer，还有每个Node的内容。
- * 性能IntObjectHashMap还是稳赢一点的，随便测了几种场景，耗时至少都有24ms vs 28ms的样子，好的时候甚至快1/3。
- *
- * @param <V>
- */
 public class IntObjectHashMap<V> implements IntObjectMap<V> {
 
     public static final int DEFAULT_CAPACITY = 8;

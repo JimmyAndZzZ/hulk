@@ -9,7 +9,7 @@ import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.jimmy.hulk.actuator.other.FileReader;
+import com.jimmy.hulk.common.other.FileReader;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.config.support.SystemVariableContext;
