@@ -10,4 +10,9 @@ public class Message implements Serializable {
     private String body;
 
     private Long offset;
+
+    public Message(String body, Long offset) {
+        this.body = body;
+        this.offset = offset;
+    }
 }

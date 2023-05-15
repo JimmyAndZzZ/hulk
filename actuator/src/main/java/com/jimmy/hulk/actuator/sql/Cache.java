@@ -134,7 +134,6 @@ public class Cache extends SQL<List<Map<String, Object>>> {
                 try {
                     content.add(JSON.parseObject(line.trim()));
                 } catch (Exception e) {
-                    log.info(line);
                     throw e;
                 }
             });
