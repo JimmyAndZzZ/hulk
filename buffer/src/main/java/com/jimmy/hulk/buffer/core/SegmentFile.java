@@ -3,28 +3,49 @@ package com.jimmy.hulk.buffer.core;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.config.support.SystemVariableContext;
 import lombok.Data;
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class SegmentFile {
 
+    private static final int BATCH_SIZE = 1000;
+
+    private static final String INDEX_LOG_SUFFIX = ".index.log";
+
+    private final List<Message> buffer = Lists.newArrayList();
+
+    private Lock lock;
+
     private String topic;
 
     private SystemVariableContext systemVariableContext;
+
+    private int currentIndexLogFileName = 0;
+
+    private AtomicInteger offsetSeq = new AtomicInteger(0);
+
+    public SegmentFile(String topic, SystemVariableContext systemVariableContext) {
+        this.topic = topic;
+        this.lock = new Lock();
+        this.systemVariableContext = systemVariableContext;
+    }
 
     public List<Message> read(int total, long offset) {
         String fileStorePath = systemVariableContext.getFileStorePath();
@@ -48,7 +69,7 @@ public class SegmentFile {
         return messages;
     }
 
-    public void write(String message) {
+    public long write(String message) {
         String fileStorePath = systemVariableContext.getFileStorePath();
 
         String dir = fileStorePath + topic;
@@ -56,9 +77,45 @@ public class SegmentFile {
             synchronized (this) {
                 if (!FileUtil.exist(dir)) {
                     FileUtil.mkdir(dir);
+                    FileUtil.touch(dir + File.separator + this.getFileName(currentIndexLogFileName) + INDEX_LOG_SUFFIX);
                 }
             }
         }
+
+        int seq = this.offsetSeq.incrementAndGet();
+        if (seq - this.currentIndexLogFileName >= BATCH_SIZE) {
+            this.resetIndex(seq);
+        }
+
+        return 0L;
+    }
+
+    /**
+     * 重置当前offset标志
+     *
+     * @param seq
+     */
+    private void resetIndex(int seq) {
+        lock.lock();
+        try {
+            if (seq - this.currentIndexLogFileName < BATCH_SIZE) {
+                return;
+            }
+
+            this.currentIndexLogFileName = this.currentIndexLogFileName + 1000;
+        } finally {
+            lock.unLock();
+        }
+    }
+
+    /**
+     * 获取文件名
+     *
+     * @param i
+     * @return
+     */
+    private String getFileName(int i) {
+        return String.format("%010d", i);
     }
 
     /**
@@ -154,7 +211,7 @@ public class SegmentFile {
      * @return
      */
     private int getIndex(String file) {
-        return Convert.toInt(StrUtil.removeAll(file, ".index.log"));
+        return Convert.toInt(StrUtil.removeAll(file, INDEX_LOG_SUFFIX));
     }
 
     @Data
@@ -166,6 +223,20 @@ public class SegmentFile {
         public IndexFile(String filePath, Integer index) {
             this.filePath = filePath;
             this.index = index;
+        }
+    }
+
+    private class Lock {
+        private AtomicReference<Thread> lock = new AtomicReference(false);
+
+        public void lock() {
+            while (!lock.compareAndSet(null, Thread.currentThread())) {
+                ThreadUtil.sleep(1);
+            }
+        }
+
+        public void unLock() {
+            lock.compareAndSet(Thread.currentThread(), null);
         }
     }
 }
