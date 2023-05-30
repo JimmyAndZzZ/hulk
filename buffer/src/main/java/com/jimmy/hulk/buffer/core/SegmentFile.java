@@ -6,20 +6,26 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.config.support.SystemVariableContext;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -31,20 +37,71 @@ public class SegmentFile {
 
     private final List<Message> buffer = Lists.newArrayList();
 
-    private Lock lock;
+    private final ConcurrentLinkedQueue<Message> queue = Queues.newConcurrentLinkedQueue();
 
     private String topic;
 
+    private boolean isRunning;
+
+    private AtomicLong offsetSeq;
+
+    private ExecutorService executeGroup;
+
+    private ExecutorService listenerGroup;
+
     private SystemVariableContext systemVariableContext;
-
-    private int currentIndexLogFileName = 0;
-
-    private AtomicInteger offsetSeq = new AtomicInteger(0);
 
     public SegmentFile(String topic, SystemVariableContext systemVariableContext) {
         this.topic = topic;
-        this.lock = new Lock();
+        this.isRunning = true;
+        this.offsetSeq = new AtomicLong(0);
         this.systemVariableContext = systemVariableContext;
+        this.executeGroup = Executors.newSingleThreadExecutor();
+        this.listenerGroup = Executors.newSingleThreadExecutor();
+
+        listenerGroup.submit((Runnable) () -> {
+            int i = 200;
+
+            while (true) {
+                Message poll = queue.poll();
+                if (poll == null) {
+                    ThreadUtil.sleep(100);
+                    Thread.yield();
+                    continue;
+                }
+
+                if (!poll.getPoisonPill()) {
+                    buffer.add(poll);
+                }
+
+                if (buffer.size() >= i || poll.getPoisonPill()) {
+                    ArrayList<Message> messages = Lists.newArrayList(buffer);
+                    buffer.clear();
+
+                    executeGroup.submit(() -> this.batchWrite(messages));
+                }
+            }
+        });
+
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> queue.add(new Message(true)), 0L, 30L, TimeUnit.SECONDS);
+    }
+
+    public void close() {
+        this.isRunning = false;
+
+        this.listenerGroup.shutdown();
+        this.executeGroup.shutdown();
+
+        List<Message> surplus = Lists.newArrayList();
+        if (CollUtil.isNotEmpty(this.queue)) {
+            surplus.addAll(this.queue);
+        }
+
+        if (CollUtil.isNotEmpty(this.buffer)) {
+            surplus.addAll(this.buffer);
+        }
+
+        this.batchWrite(surplus);
     }
 
     public List<Message> read(int total, long offset) {
@@ -69,7 +126,11 @@ public class SegmentFile {
         return messages;
     }
 
-    public long write(String message) {
+    public void write(String message) {
+        if (!this.isRunning) {
+            throw new HulkException("未开启", ModuleEnum.BUFFER);
+        }
+
         String fileStorePath = systemVariableContext.getFileStorePath();
 
         String dir = fileStorePath + topic;
@@ -77,35 +138,11 @@ public class SegmentFile {
             synchronized (this) {
                 if (!FileUtil.exist(dir)) {
                     FileUtil.mkdir(dir);
-                    FileUtil.touch(dir + File.separator + this.getFileName(currentIndexLogFileName) + INDEX_LOG_SUFFIX);
                 }
             }
         }
 
-        int seq = this.offsetSeq.incrementAndGet();
-        if (seq - this.currentIndexLogFileName >= BATCH_SIZE) {
-            this.resetIndex(seq);
-        }
-
-        return 0L;
-    }
-
-    /**
-     * 重置当前offset标志
-     *
-     * @param seq
-     */
-    private void resetIndex(int seq) {
-        lock.lock();
-        try {
-            if (seq - this.currentIndexLogFileName < BATCH_SIZE) {
-                return;
-            }
-
-            this.currentIndexLogFileName = this.currentIndexLogFileName + 1000;
-        } finally {
-            lock.unLock();
-        }
+        this.queue.add(new Message(message, offsetSeq.getAndIncrement()));
     }
 
     /**
@@ -114,8 +151,45 @@ public class SegmentFile {
      * @param i
      * @return
      */
-    private String getFileName(int i) {
-        return String.format("%010d", i);
+    private String getFileName(long i) {
+        long result = i / BATCH_SIZE;
+        return String.format("%010d", result * 1000);
+    }
+
+    /**
+     * 批量写入
+     *
+     * @param messages
+     */
+    private void batchWrite(List<Message> messages) {
+        if (CollUtil.isEmpty(messages)) {
+            return;
+        }
+
+        for (Message message : messages) {
+            String body = message.getBody();
+            Long offset = message.getOffset();
+
+            String fileName = this.getFileName(offset);
+            this.writeFileWithLine(fileName, body);
+        }
+    }
+
+    /**
+     * 按行追加
+     *
+     * @param fileName
+     * @param message
+     */
+    private void writeFileWithLine(String fileName, String message) {
+        try (FileChannel channel = FileChannel.open(Paths.get(fileName), StandardOpenOption.APPEND)) {
+            ByteBuffer buffer = ByteBuffer.wrap(message.getBytes(StandardCharsets.UTF_8));
+            long position = channel.size(); // 当前文件大小即为追加写入的起始位置
+            channel.position(position);
+            channel.write(buffer); // 将数据写入文件
+        } catch (IOException e) {
+            throw new HulkException(e.getMessage(), ModuleEnum.BUFFER);
+        }
     }
 
     /**

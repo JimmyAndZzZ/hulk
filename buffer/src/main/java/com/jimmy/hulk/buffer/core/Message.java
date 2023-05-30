@@ -3,7 +3,6 @@ package com.jimmy.hulk.buffer.core;
 import lombok.Getter;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Message implements Serializable {
 
@@ -13,15 +12,16 @@ public class Message implements Serializable {
     @Getter
     private Long offset;
 
-    private AtomicBoolean durable;
+    @Getter
+    private Boolean poisonPill = false;
 
     public Message(String body, Long offset) {
         this.body = body;
         this.offset = offset;
-        this.durable = new AtomicBoolean(false);
     }
 
-    public boolean getDurable() {
-        return durable.get();
+    public Message(Boolean poisonPill) {
+        this.poisonPill = poisonPill;
     }
+
 }
