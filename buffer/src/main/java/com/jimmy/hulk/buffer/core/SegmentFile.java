@@ -52,6 +52,10 @@ public class SegmentFile {
     private SystemVariableContext systemVariableContext;
 
     public SegmentFile(String topic, SystemVariableContext systemVariableContext) {
+        this(topic, systemVariableContext, 200, 30);
+    }
+
+    public SegmentFile(String topic, SystemVariableContext systemVariableContext, int batchSize, int delay) {
         this.topic = topic;
         this.isRunning = true;
         this.offsetSeq = new AtomicLong(0);
@@ -60,8 +64,6 @@ public class SegmentFile {
         this.listenerGroup = Executors.newSingleThreadExecutor();
 
         listenerGroup.submit((Runnable) () -> {
-            int i = 200;
-
             while (true) {
                 Message poll = queue.poll();
                 if (poll == null) {
@@ -74,7 +76,7 @@ public class SegmentFile {
                     buffer.add(poll);
                 }
 
-                if (buffer.size() >= i || poll.getPoisonPill()) {
+                if (buffer.size() >= batchSize || poll.getPoisonPill()) {
                     ArrayList<Message> messages = Lists.newArrayList(buffer);
                     buffer.clear();
 
@@ -83,7 +85,7 @@ public class SegmentFile {
             }
         });
 
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> queue.add(new Message(true)), 0L, 30L, TimeUnit.SECONDS);
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> queue.add(new Message(true)), 0L, delay, TimeUnit.SECONDS);
     }
 
     public void close() {
