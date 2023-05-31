@@ -24,9 +24,6 @@ public class HeapMemorySegment extends BaseSegment {
 
     @Override
     public byte[] read() {
-        if(free.get()){
-            System.out.println("123");
-        }
         Assert.isTrue(!free.get(), "该内存块空闲");
 
         this.byteBuffer.flip();

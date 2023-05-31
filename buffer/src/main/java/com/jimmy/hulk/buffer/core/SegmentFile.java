@@ -51,10 +51,6 @@ public class SegmentFile {
 
     private SystemVariableContext systemVariableContext;
 
-    public SegmentFile(String topic, SystemVariableContext systemVariableContext) {
-        this(topic, systemVariableContext, 200, 30);
-    }
-
     public SegmentFile(String topic, SystemVariableContext systemVariableContext, int batchSize, int delay) {
         this.topic = topic;
         this.isRunning = true;
@@ -128,9 +124,9 @@ public class SegmentFile {
         return messages;
     }
 
-    public void write(String message) {
+    public Message write(String message) {
         if (!this.isRunning) {
-            throw new HulkException("未开启", ModuleEnum.BUFFER);
+            throw new HulkException("未运行", ModuleEnum.BUFFER);
         }
 
         String fileStorePath = systemVariableContext.getFileStorePath();
@@ -144,7 +140,9 @@ public class SegmentFile {
             }
         }
 
-        this.queue.add(new Message(message, offsetSeq.getAndIncrement()));
+        Message body = new Message(message, offsetSeq.getAndIncrement());
+        this.queue.add(body);
+        return body;
     }
 
     /**

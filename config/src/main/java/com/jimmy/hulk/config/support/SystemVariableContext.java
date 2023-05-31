@@ -1,6 +1,9 @@
 package com.jimmy.hulk.config.support;
 
 
+import cn.hutool.core.util.StrUtil;
+import com.jimmy.hulk.common.constant.Constants;
+
 public class SystemVariableContext {
 
     private Integer pageSize = 200;
@@ -28,6 +31,10 @@ public class SystemVariableContext {
     }
 
     public String getFileStorePath() {
+        if (!StrUtil.endWith(fileStorePath, Constants.Booster.SEPARATOR)) {
+            fileStorePath = fileStorePath + Constants.Booster.SEPARATOR;
+        }
+
         return fileStorePath;
     }
 

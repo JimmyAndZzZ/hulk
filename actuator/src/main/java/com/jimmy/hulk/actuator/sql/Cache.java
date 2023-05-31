@@ -51,10 +51,6 @@ public class Cache extends SQL<List<Map<String, Object>>> {
             }
             //后缀处理
             String fileStorePath = systemVariableContext.getFileStorePath();
-            if (!StrUtil.endWith(fileStorePath, Constants.Booster.SEPARATOR)) {
-                fileStorePath = fileStorePath + Constants.Booster.SEPARATOR;
-            }
-
             String dirPath = StrUtil.builder().append(fileStorePath).append(CACHE_FILE_PATH).toString();
             //创建文件夹
             if (!FileUtil.exist(dirPath)) {

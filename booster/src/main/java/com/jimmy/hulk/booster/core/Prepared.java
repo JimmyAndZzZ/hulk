@@ -59,9 +59,6 @@ public class Prepared {
 
     public void clear() {
         String fileStorePath = systemVariableContext.getFileStorePath();
-        if (!StrUtil.endWith(fileStorePath, Constants.Booster.SEPARATOR)) {
-            fileStorePath = fileStorePath + Constants.Booster.SEPARATOR;
-        }
         //清理磁盘文件
         String filePath = StrUtil.builder().append(fileStorePath).append(PREPARED_STATEMENT_FILE_PATH).toString();
         if (FileUtil.exist(filePath)) {
@@ -191,9 +188,6 @@ public class Prepared {
      */
     private void storePreparedStatement(long statementId, PreparedStatement preparedStatement) {
         String fileStorePath = systemVariableContext.getFileStorePath();
-        if (!StrUtil.endWith(fileStorePath, Constants.Booster.SEPARATOR)) {
-            fileStorePath = fileStorePath + Constants.Booster.SEPARATOR;
-        }
 
         String filePath = StrUtil.builder().append(fileStorePath).append(PREPARED_STATEMENT_FILE_PATH).toString();
         //创建文件夹
@@ -217,9 +211,6 @@ public class Prepared {
      */
     private PreparedStatement loadPreparedStatement(long statementId) {
         String fileStorePath = systemVariableContext.getFileStorePath();
-        if (!StrUtil.endWith(fileStorePath, Constants.Booster.SEPARATOR)) {
-            fileStorePath = fileStorePath + Constants.Booster.SEPARATOR;
-        }
 
         String filePath = StrUtil.builder()
                 .append(fileStorePath)
