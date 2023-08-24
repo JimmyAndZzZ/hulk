@@ -120,10 +120,12 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
         AtomicInteger count = new AtomicInteger(0);
         try {
             while ((line = lineReader.readLine()) != null) {
-                line = StrUtil.replace(line, new StringBuilder("`").append(table).append("`").toString(), new StringBuilder("\"").append(table.toUpperCase()).append("\"").toString());
-                //别名替换
-                if (StrUtil.isNotEmpty(alias)) {
-                    line = StrUtil.replace(line, table.toUpperCase(), alias.toUpperCase());
+                if (StrUtil.isNotBlank(table)) {
+                    line = StrUtil.replace(line, new StringBuilder("`").append(table).append("`").toString(), new StringBuilder("\"").append(table.toUpperCase()).append("\"").toString());
+                    //别名替换
+                    if (StrUtil.isNotEmpty(alias)) {
+                        line = StrUtil.replace(line, table.toUpperCase(), alias.toUpperCase());
+                    }
                 }
 
                 if (StrUtil.contains(line, "\\'")) {
@@ -133,8 +135,6 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
                 if (StrUtil.contains(line, "`")) {
                     line = StrUtil.removeAll(line, "`");
                 }
-                //时间处理
-                line = this.timeRegMatch(line);
 
                 if (command == null) {
                     command = new StringBuffer();
@@ -172,7 +172,8 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
                     if (trimmedLine.getBytes().length > 4000 || trimmedLine.length() > 4000) {
                         longSql.add(trimmedLine);
                     } else {
-                        statement.execute(trimmedLine);
+                        //时间处理
+                        statement.execute(this.timeRegMatch(trimmedLine));
                     }
 
                     i.incrementAndGet();
@@ -192,6 +193,12 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
             conn.commit();
             if (count.get() > 0) {
                 notify.callback(sum, count.longValue());
+            }
+
+            if (CollUtil.isNotEmpty(longSql)) {
+                for (String s : longSql) {
+                    this.longSqlHandler(s, connection);
+                }
             }
         } finally {
             DataSourceUtils.releaseConnection(conn, connection);
