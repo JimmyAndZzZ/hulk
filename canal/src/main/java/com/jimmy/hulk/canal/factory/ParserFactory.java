@@ -1,17 +1,19 @@
 package com.jimmy.hulk.canal.factory;
 
 import com.alibaba.otter.canal.parse.inbound.mysql.AbstractMysqlEventParser;
-import com.jimmy.hulk.canal.starter.Configuration;
+import com.jimmy.hulk.canal.core.ConfigProperties;
+import com.jimmy.hulk.canal.enums.ModeTypeEnum;
 
 public class ParserFactory {
 
-    public static AbstractMysqlEventParser createParser(Configuration configuration) {
-        String mode = configuration.getMode();
-        if ("online".equals(mode)) {
-            return new OnlineParserBuilder(configuration).build();
-        } else if ("file".equals(mode)) {
-            return new FileParserBuilder(configuration).build();
+    public static AbstractMysqlEventParser createParser(ConfigProperties configProperties, ModeTypeEnum modeTypeEnum) {
+        switch (modeTypeEnum) {
+            case MYSQL_BINLOG:
+                return new MysqlBinlogFileParserBuilder(configProperties).build();
+            case MYSQL_STREAM:
+                return new MysqlStreamParserBuilder(configProperties).build();
+            default:
+                throw new IllegalArgumentException("unsupported mode");
         }
-        throw new IllegalArgumentException("unsupported mode");
     }
 }

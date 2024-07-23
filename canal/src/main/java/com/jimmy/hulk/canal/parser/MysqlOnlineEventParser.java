@@ -4,7 +4,7 @@ import com.alibaba.otter.canal.parse.inbound.ErosaConnection;
 import com.alibaba.otter.canal.parse.inbound.MultiStageCoprocessor;
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser;
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlMultiStageCoprocessor;
-import com.jimmy.hulk.canal.filter.LogEventFilter;
+import com.jimmy.hulk.canal.core.LogEventFilter;
 
 public class MysqlOnlineEventParser extends MysqlEventParser {
 

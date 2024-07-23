@@ -10,7 +10,7 @@ import com.alibaba.otter.canal.parse.inbound.MultiStageCoprocessor;
 import com.alibaba.otter.canal.parse.inbound.TableMeta;
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.LogEventConvert;
 import com.alibaba.otter.canal.protocol.CanalEntry;
-import com.jimmy.hulk.canal.filter.LogEventFilter;
+import com.jimmy.hulk.canal.core.LogEventFilter;
 import com.lmax.disruptor.*;
 import com.taobao.tddl.dbsync.binlog.LogBuffer;
 import com.taobao.tddl.dbsync.binlog.LogContext;

@@ -14,7 +14,7 @@ import com.alibaba.otter.canal.parse.index.CanalLogPositionManager;
 import com.alibaba.otter.canal.parse.support.AuthenticationInfo;
 import com.alibaba.otter.canal.protocol.position.EntryPosition;
 import com.jimmy.hulk.canal.connection.BinlogFileConnection;
-import com.jimmy.hulk.canal.filter.LogEventFilter;
+import com.jimmy.hulk.canal.core.LogEventFilter;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
@@ -26,7 +26,7 @@ import java.net.InetSocketAddress;
  * @author jianghang 2012-6-21 下午04:07:33
  * @version 1.0.0
  */
-public class BinlogFileEventParser extends AbstractMysqlEventParser implements CanalEventParser {
+public class MysqlBinlogFileEventParser extends AbstractMysqlEventParser implements CanalEventParser {
 
     // 数据库信息
     protected AuthenticationInfo masterInfo = new AuthenticationInfo(new InetSocketAddress("localhost", 3306), "", "");
@@ -40,7 +40,7 @@ public class BinlogFileEventParser extends AbstractMysqlEventParser implements C
 
     protected LogEventFilter logEventFilter;
 
-    public BinlogFileEventParser() {
+    public MysqlBinlogFileEventParser() {
         // this.runningInfo = new AuthenticationInfo();
     }
 

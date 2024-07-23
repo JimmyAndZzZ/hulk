@@ -1,26 +1,25 @@
-package com.jimmy.hulk.canal.filter;
+package com.jimmy.hulk.canal.core;
 
-import com.alibaba.otter.canal.parse.exception.ServerIdNotMatchException;
 import com.taobao.tddl.dbsync.binlog.LogEvent;
 
 import java.util.Date;
 
 public class LogEventFilter {
 
-    private long serverId;
-    private Date startTime;
-    private Date endTime;
-    private Long startPosition;
-    private Long endPosition;
+    private final Date startTime;
 
-    private String startFile;
-    private String endFile;
+    private final Date endTime;
+
+    private final Long startPosition;
+
+    private final Long endPosition;
+
+    private final String startFile;
+
+    private final String endFile;
 
     public LogEventFilter(Date startTime, Date endTime, Long startPosition, Long endPosition) {
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.startPosition = startPosition;
-        this.endPosition = endPosition;
+        this(startTime, endTime, startPosition, endPosition, null, null);
     }
 
     public LogEventFilter(Date startTime, Date endTime, Long startPosition, Long endPosition, String startFile, String endFile) {
@@ -67,9 +66,6 @@ public class LogEventFilter {
             }
         }
 
-        if (serverId != 0 && event.getServerId() != serverId) {
-            throw new ServerIdNotMatchException("unexpected serverId " + serverId + " in binlog file !");
-        }
         return event;
     }
 

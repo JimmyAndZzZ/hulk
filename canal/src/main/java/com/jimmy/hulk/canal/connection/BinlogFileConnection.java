@@ -5,7 +5,7 @@ import com.alibaba.otter.canal.parse.inbound.ErosaConnection;
 import com.alibaba.otter.canal.parse.inbound.MultiStageCoprocessor;
 import com.alibaba.otter.canal.parse.inbound.SinkFunction;
 import com.jimmy.hulk.canal.fetcher.BinlogFileLogFetcher;
-import com.jimmy.hulk.canal.filter.LogEventFilter;
+import com.jimmy.hulk.canal.core.LogEventFilter;
 import com.taobao.tddl.dbsync.binlog.LogContext;
 import com.taobao.tddl.dbsync.binlog.LogDecoder;
 import com.taobao.tddl.dbsync.binlog.LogEvent;
