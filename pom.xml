@@ -26,6 +26,7 @@
         <module>route</module>
         <module>authority</module>
         <module>buffer</module>
+        <module>canal</module>
     </modules>
 
     <properties>
@@ -57,10 +58,16 @@
         <jsqlparser.version>4.6</jsqlparser.version>
         <mssql.version>9.2.1.jre8</mssql.version>
         <mongodb.version>4.4.2</mongodb.version>
+        <canal.version>1.1.5</canal.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.alibaba.otter</groupId>
+                <artifactId>canal.parse</artifactId>
+                <version>${canal.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>

@@ -197,7 +197,7 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
 
             if (CollUtil.isNotEmpty(longSql)) {
                 for (String s : longSql) {
-                    this.longSqlHandler(s, connection);
+                    //this.longSqlHandler(s, connection);
                 }
             }
         } finally {
