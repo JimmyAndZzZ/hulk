@@ -31,7 +31,7 @@
     <properties>
         <logback.version>1.2.9</logback.version>
         <spring.boot.starter.version>2.1.2.RELEASE</spring.boot.starter.version>
-        <commons.io.version>2.2</commons.io.version>
+        <commons.io.version>2.4</commons.io.version>
         <commons.version>3.5</commons.version>
         <mysql.version>5.1.47</mysql.version>
         <commons-collections.version>3.2.2</commons-collections.version>
@@ -39,7 +39,7 @@
         <mysql.version>5.1.47</mysql.version>
         <lombok.version>1.16.10</lombok.version>
         <hutool.version>5.8.20</hutool.version>
-        <guava.version>20.0</guava.version>
+        <guava.version>22.0</guava.version>
         <elasticsearch.version>7.6.0</elasticsearch.version>
         <oracle.version>11.2.0.4</oracle.version>
         <clickHouse.version>0.3.2</clickHouse.version>
