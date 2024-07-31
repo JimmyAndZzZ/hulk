@@ -6,9 +6,15 @@ import com.alibaba.otter.canal.common.utils.ExecutorTemplate;
 import com.alibaba.otter.canal.common.utils.NamedThreadFactory;
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter;
 import com.alibaba.otter.canal.meta.FileMixedMetaManager;
+import com.alibaba.otter.canal.parse.CanalEventParser;
+import com.alibaba.otter.canal.parse.ha.CanalHAController;
 import com.alibaba.otter.canal.parse.ha.HeartBeatHAController;
+import com.alibaba.otter.canal.parse.inbound.AbstractEventParser;
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser;
+import com.alibaba.otter.canal.parse.index.CanalLogPositionManager;
+import com.alibaba.otter.canal.parse.index.FailbackLogPositionManager;
 import com.alibaba.otter.canal.parse.index.MemoryLogPositionManager;
+import com.alibaba.otter.canal.parse.index.MetaLogPositionManager;
 import com.alibaba.otter.canal.parse.support.AuthenticationInfo;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.alibaba.otter.canal.protocol.ClientIdentity;
@@ -51,7 +57,7 @@ public class MysqlInstance implements Instance {
 
     private final FileMixedMetaManager fileMixedMetaManager;
 
-    private final MemoryLogPositionManager memoryLogPositionManager;
+    private final FailbackLogPositionManager failbackLogPositionManager;
 
     private final MemoryEventStoreWithBuffer memoryEventStoreWithBuffer;
 
@@ -93,16 +99,16 @@ public class MysqlInstance implements Instance {
         this.entryEventSink.setFilterTransactionEntry(false);
         this.entryEventSink.setEventStore(this.memoryEventStoreWithBuffer);
 
-        this.memoryLogPositionManager = new MemoryLogPositionManager();
+        this.failbackLogPositionManager = new FailbackLogPositionManager(new MemoryLogPositionManager(),new MetaLogPositionManager(fileMixedMetaManager));
         //事件解析
         this.mysqlEventParser = new MysqlEventParser();
         this.mysqlEventParser.setDestination(destination);
         this.mysqlEventParser.setConnectionCharset("UTF-8");
         this.mysqlEventParser.setDetectingSQL("select 1");
         this.mysqlEventParser.setSlaveId(slaveId);
-        this.mysqlEventParser.setMasterInfo(new AuthenticationInfo(InetSocketAddress.createUnresolved(host, port), username, password, defaultDatabaseName));
-        this.mysqlEventParser.setLogPositionManager(memoryLogPositionManager);
-        this.mysqlEventParser.setEventSink(entryEventSink);
+        this.mysqlEventParser.setMasterInfo(new AuthenticationInfo(new InetSocketAddress(host, port), username, password, defaultDatabaseName));
+        this.mysqlEventParser.setLogPositionManager(this.failbackLogPositionManager);
+        this.mysqlEventParser.setEventSink(this.entryEventSink);
 
         if (StrUtil.isNotBlank(filterExpression)) {
             this.mysqlEventParser.setEventFilter(new AviaterRegexFilter(filterExpression));
@@ -136,8 +142,10 @@ public class MysqlInstance implements Instance {
         this.fileMixedMetaManager.start();
         this.memoryEventStoreWithBuffer.start();
         this.entryEventSink.start();
-        this.memoryLogPositionManager.start();
+        this.failbackLogPositionManager.start();
         this.mysqlEventParser.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
 
         new Thread(new Runnable() {
             @Override
@@ -196,8 +204,8 @@ public class MysqlInstance implements Instance {
                                 }
                             }
 
-                            rollback();
-                            //ack(batchId);
+                            //rollback();
+                            ack(batchId);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -210,11 +218,13 @@ public class MysqlInstance implements Instance {
 
     @Override
     public void stop() {
+        System.out.println("停止啦");
+
         this.mysqlEventParser.stop();
-        this.memoryLogPositionManager.stop();
+        this.fileMixedMetaManager.stop();
+        this.failbackLogPositionManager.stop();
         this.entryEventSink.stop();
         this.memoryEventStoreWithBuffer.stop();
-        this.fileMixedMetaManager.stop();
     }
 
     private String getValue(CanalEntry.Column column) {
