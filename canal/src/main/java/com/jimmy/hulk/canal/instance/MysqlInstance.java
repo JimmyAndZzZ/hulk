@@ -139,6 +139,14 @@ public class MysqlInstance implements Instance {
 
     @Override
     public void start() {
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(1,
+                1,
+                0,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(60),
+                new NamedThreadFactory("MQ-Parallel-Builder"),
+                new ThreadPoolExecutor.CallerRunsPolicy());
+
         this.fileMixedMetaManager.start();
         this.memoryEventStoreWithBuffer.start();
         this.entryEventSink.start();
@@ -174,13 +182,7 @@ public class MysqlInstance implements Instance {
 
                             Message message = new Message(batchId, true, entrys);
 
-                            EntryRowData[] datas = buildMessageData(message, new ThreadPoolExecutor(1,
-                                    1,
-                                    0,
-                                    TimeUnit.SECONDS,
-                                    new ArrayBlockingQueue<>(60),
-                                    new NamedThreadFactory("MQ-Parallel-Builder"),
-                                    new ThreadPoolExecutor.CallerRunsPolicy()));
+                            EntryRowData[] datas = buildMessageData(message, executor);
 
                             for (EntryRowData data : datas) {
                                 CanalEntry.Entry entry = data.entry;
