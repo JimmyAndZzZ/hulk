@@ -1,6 +1,8 @@
 package com.jimmy.hulk.canal.instance;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.otter.canal.common.utils.ExecutorTemplate;
 import com.alibaba.otter.canal.common.utils.NamedThreadFactory;
@@ -27,10 +29,14 @@ import com.alibaba.otter.canal.sink.entry.EntryEventSink;
 import com.alibaba.otter.canal.store.memory.MemoryEventStoreWithBuffer;
 import com.alibaba.otter.canal.store.model.Event;
 import com.alibaba.otter.canal.store.model.Events;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.jimmy.hulk.canal.base.Instance;
+import com.jimmy.hulk.canal.core.CanalMessage;
 import com.jimmy.hulk.canal.core.CanalPosition;
+import com.jimmy.hulk.canal.core.CanalRowData;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -67,6 +74,17 @@ public class MysqlInstance implements Instance {
     private final FailbackLogPositionManager failbackLogPositionManager;
 
     private final MemoryEventStoreWithBuffer memoryEventStoreWithBuffer;
+
+    public static void main(String[] args) {
+        MysqlInstance mysqlInstance = new MysqlInstance("/tmp", "zl_test", 1231231312L, "192.168.5.215", 3306, "dev", "123456", "zl_test", "zl_test.cdc_bond_mir", null);
+
+        CanalPosition canalPosition = new CanalPosition();
+        canalPosition.setTimestamp(1722405345000L);
+
+        mysqlInstance.point(canalPosition);
+        mysqlInstance.start();
+        mysqlInstance.subscribe();
+    }
 
     public MysqlInstance(String fileDataDir, String destination, Long slaveId, String host, Integer port, String username, String password, String defaultDatabaseName, String filterExpression, String blacklistExpression) {
         this(fileDataDir, destination, slaveId, host, port, username, password, defaultDatabaseName, filterExpression, blacklistExpression, false);
@@ -122,8 +140,106 @@ public class MysqlInstance implements Instance {
         entryPosition.setPosition(canalPosition.getPosition());
         entryPosition.setJournalName(canalPosition.getJournalName());
         entryPosition.setTimestamp(canalPosition.getTimestamp());
-        this.mysqlEventParser.setStandbyPosition(entryPosition);
+        this.mysqlEventParser.setMasterPosition(entryPosition);
     }
+
+    @Override
+    public CanalMessage get(int batchSize, Long timeout, TimeUnit unit) {
+        // 获取到流式数据中的最后一批获取的位置
+        PositionRange<LogPosition> positionRanges = fileMixedMetaManager.getLastestBatch(clientIdentity);
+
+        Events<Event> events;
+        if (positionRanges != null) { // 存在流数据
+            events = getEvents(positionRanges.getStart(), batchSize, timeout, unit);
+        } else {// ack后第一次获取
+            Position start = fileMixedMetaManager.getCursor(clientIdentity);
+            if (start == null) { // 第一次，还没有过ack记录，则获取当前store中的第一条
+                start = memoryEventStoreWithBuffer.getFirstPosition();
+            }
+
+            events = getEvents(start, batchSize, timeout, unit);
+        }
+        //返回空包，避免生成batchId
+        if (CollUtil.isEmpty(events.getEvents())) {
+            CanalMessage canalMessage = new CanalMessage();
+            canalMessage.setId(-1L);
+            return canalMessage;
+        }
+        // 记录到流式信息
+        Long batchId = fileMixedMetaManager.addBatch(clientIdentity, events.getPositionRange());
+        List<ByteString> entrys = events.getEvents().stream().map(Event::getRawEntry).collect(Collectors.toList());
+        //反序列化
+        EntryRowData[] entryRowData = this.buildData(entrys, executor);
+
+        CanalMessage canalMessage = new CanalMessage();
+        canalMessage.setId(batchId);
+
+        for (EntryRowData data : entryRowData) {
+            CanalEntry.Entry entry = data.entry;
+            CanalEntry.RowChange rowChange = data.rowChange;
+            if (entry.getEntryType() == CanalEntry.EntryType.ROWDATA) {
+                CanalEntry.EventType eventType = rowChange.getEventType();
+                List<CanalEntry.RowData> rowDatasList = rowChange.getRowDatasList();
+
+                CanalRowData canalRowData = this.geneCanalRowData(entry);
+                //ddl的处理
+                if (rowChange.getIsDdl()) {
+                    canalRowData.setIsDdl(true);
+                    canalRowData.setSql(rowChange.getSql());
+                    canalMessage.getCanalRowDataList().add(canalRowData);
+                }
+
+                for (int i = 0; i < rowDatasList.size(); i++) {
+                    CanalEntry.RowData rowData = rowDatasList.get(i);
+
+                    List<CanalEntry.Column> afterColumnsList = rowData.getAfterColumnsList();
+                    List<CanalEntry.Column> beforeColumnsList = rowData.getBeforeColumnsList();
+
+                    if (i == 0) {
+                        this.columnHandler(canalRowData, afterColumnsList);
+                    }
+
+                    switch (eventType) {
+                        case INSERT:
+                            Map<String, String> insertData = Maps.newHashMap();
+
+                            for (CanalEntry.Column column : afterColumnsList) {
+                                insertData.put(column.getName(), column.getValue());
+                            }
+
+                            canalRowData.getData().add(insertData);
+                            break;
+                        case UPDATE:
+                            Map<String, String> updateTargetData = Maps.newHashMap();
+                            Map<String, String> updateSourceData = Maps.newHashMap();
+
+                            for (CanalEntry.Column column : afterColumnsList) {
+                                updateTargetData.put(column.getName(), column.getValue());
+                            }
+
+
+                            canalRowData.getData().add(updateTargetData);
+
+                        case DELETE:
+                            Map<String, String> deleteData = Maps.newHashMap();
+
+                            for (CanalEntry.Column column : afterColumnsList) {
+                                deleteData.put(column.getName(), column.getValue());
+                            }
+
+                            canalRowData.getData().add(deleteData);
+                            break;
+                    }
+                }
+
+
+                canalMessage.getCanalRowDataList().add(canalRowData);
+            }
+        }
+
+        return canalMessage;
+    }
+
 
     @Override
     public void subscribe() {
@@ -174,75 +290,6 @@ public class MysqlInstance implements Instance {
         if (!this.mysqlEventParser.isStart()) {
             this.mysqlEventParser.start();
         }
-
-        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        // 获取到流式数据中的最后一批获取的位置
-                        PositionRange<LogPosition> positionRanges = fileMixedMetaManager.getLastestBatch(clientIdentity);
-
-                        Events<Event> events = null;
-                        if (positionRanges != null) { // 存在流数据
-                            events = getEvents(positionRanges.getStart(), 10, 1L, TimeUnit.SECONDS);
-                        } else {// ack后第一次获取
-                            Position start = fileMixedMetaManager.getCursor(clientIdentity);
-                            if (start == null) { // 第一次，还没有过ack记录，则获取当前store中的第一条
-                                start = memoryEventStoreWithBuffer.getFirstPosition();
-                            }
-
-                            events = getEvents(start, 10, 1L, TimeUnit.SECONDS);
-                        }
-
-                        if (CollUtil.isNotEmpty(events.getEvents())) {
-                            // 记录到流式信息
-                            Long batchId = fileMixedMetaManager.addBatch(clientIdentity, events.getPositionRange());
-                            List<ByteString> entrys = events.getEvents().stream().map(Event::getRawEntry).collect(Collectors.toList());
-
-                            Message message = new Message(batchId, true, entrys);
-
-                            EntryRowData[] datas = buildMessageData(message, executor);
-
-                            for (EntryRowData data : datas) {
-                                CanalEntry.Entry entry = data.entry;
-                                CanalEntry.RowChange rowChange = data.rowChange;
-                                if (entry.getEntryType() == CanalEntry.EntryType.ROWDATA) {
-                                    List<CanalEntry.RowData> rowDatasList = rowChange.getRowDatasList();
-
-                                    String tableName = entry.getHeader().getTableName();
-
-
-                                    System.out.println("tableName:::" + tableName);
-
-                                    if (rowChange.getIsDdl()) {
-                                        System.out.println("ddl::" + rowChange.getSql());
-                                        continue;
-                                    }
-
-                                    for (CanalEntry.RowData rowData : rowDatasList) {
-                                        List<CanalEntry.Column> afterColumnsList = rowData.getAfterColumnsList();
-                                        List<CanalEntry.Column> beforeColumnsList = rowData.getBeforeColumnsList();
-                                        List<CanalEntry.Column> pkList = beforeColumnsList.stream().filter(i -> i.getIsKey()).collect(Collectors.toList());
-
-                                        for (CanalEntry.Column column : afterColumnsList) {
-                                            System.out.println(column.getName() + ":" + getValue(column));
-                                        }
-                                    }
-                                }
-                            }
-
-                            //rollback();
-                            ack(batchId);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        rollback();
-                    }
-                }
-            }
-        }).start();
     }
 
     @Override
@@ -272,30 +319,8 @@ public class MysqlInstance implements Instance {
         }
     }
 
-    private String getValue(CanalEntry.Column column) {
-        if (column.getIsNull()) {
-            return "NULL";
-        }
-        String mysqlType = column.getMysqlType();
-        String[] split = mysqlType.split("\\(");
-        if (split.length != 1) {
-            mysqlType = split[0];
-        }
-        if (typesRequiringQuotes.contains(mysqlType)) {
-            // 使用预编译的模式进行替换
-            Matcher matcher = PATTERN_SINGLE_QUOTE.matcher(column.getValue());
-            String escapedStr = matcher.replaceAll("\\\\'");
-            return "'" + escapedStr + "'";
-        }
-        return column.getValue();
-    }
-
-    /**
-     * ack消息批次
-     *
-     * @param batchId
-     */
-    private void ack(long batchId) {
+    @Override
+    public void ack(long batchId) {
         PositionRange<LogPosition> positionRanges = this.fileMixedMetaManager.removeBatch(clientIdentity, batchId); // 更新位置
         if (positionRanges == null) { // 说明是重复的ack/rollback
             return;
@@ -308,17 +333,51 @@ public class MysqlInstance implements Instance {
         this.memoryEventStoreWithBuffer.ack(positionRanges.getEnd(), positionRanges.getEndSeq());
     }
 
+    @Override
     public void rollback() {
         // 因为存在第一次链接时自动rollback的情况，所以需要忽略未订阅
         boolean hasSubscribe = this.fileMixedMetaManager.hasSubscribe(clientIdentity);
         if (!hasSubscribe) {
             return;
         }
-
         // 清除batch信息
         this.fileMixedMetaManager.clearAllBatchs(clientIdentity);
         // rollback eventStore中的状态信息
         this.memoryEventStoreWithBuffer.rollback();
+    }
+
+    /**
+     * 字段信息处理
+     *
+     * @param canalRowData
+     * @param columns
+     */
+    private void columnHandler(CanalRowData canalRowData, List<CanalEntry.Column> columns) {
+        for (CanalEntry.Column column : columns) {
+            String name = column.getName();
+
+            if (column.getIsKey()) {
+                canalRowData.getPkNames().add(name);
+            }
+
+            canalRowData.getMysqlType().put(name, column.getMysqlType());
+        }
+    }
+
+    /**
+     * 初始化数据包
+     *
+     * @param entry
+     * @return
+     */
+    private CanalRowData geneCanalRowData(CanalEntry.Entry entry) {
+        CanalRowData canalRowData = new CanalRowData();
+        canalRowData.setId(IdUtil.getSnowflake(1, 1).nextId());
+        canalRowData.setEs(entry.getHeader().getExecuteTime());
+        canalRowData.setTs(System.currentTimeMillis());
+        canalRowData.setDatabase(entry.getHeader().getSchemaName());
+        canalRowData.setTable(entry.getHeader().getTableName());
+        return canalRowData;
     }
 
     /**
@@ -343,13 +402,12 @@ public class MysqlInstance implements Instance {
     /**
      * 反序列化
      *
-     * @param message
+     * @param rawEntries
      * @param executor
      * @return
      */
-    private EntryRowData[] buildMessageData(Message message, ThreadPoolExecutor executor) {
+    private EntryRowData[] buildData(List<ByteString> rawEntries, ThreadPoolExecutor executor) {
         ExecutorTemplate template = new ExecutorTemplate(executor);
-        List<ByteString> rawEntries = message.getRawEntries();
         final EntryRowData[] datas = new EntryRowData[rawEntries.size()];
         int i = 0;
         for (ByteString byteString : rawEntries) {
