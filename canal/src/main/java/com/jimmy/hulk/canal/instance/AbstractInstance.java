@@ -1,13 +1,18 @@
 package com.jimmy.hulk.canal.instance;
 
-import com.alibaba.otter.canal.common.CanalException;
 import com.jimmy.hulk.canal.base.Instance;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 
 public abstract class AbstractInstance implements Instance {
 
+    protected final String destination;
+
     protected volatile boolean running = false; // 是否处于运行中
+
+    protected AbstractInstance(String destination) {
+        this.destination = destination;
+    }
 
     public boolean isStart() {
         return running;

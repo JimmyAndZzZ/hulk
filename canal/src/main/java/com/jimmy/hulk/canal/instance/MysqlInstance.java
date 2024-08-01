@@ -48,8 +48,6 @@ public class MysqlInstance extends AbstractInstance {
 
     private final String dataDir;
 
-    private final String destination;
-
     private final ThreadPoolExecutor executor;
 
     private final ClientIdentity clientIdentity;
@@ -66,9 +64,20 @@ public class MysqlInstance extends AbstractInstance {
 
     private final MemoryEventStoreWithBuffer memoryEventStoreWithBuffer;
 
-    public MysqlInstance(String fileDataDir, String destination, Long slaveId, String host, Integer port, String username, String password, String defaultDatabaseName, String filterExpression, String blacklistExpression, boolean isGTIDMode) {
+    public MysqlInstance(String fileDataDir,
+                         String destination,
+                         Long slaveId,
+                         String host,
+                         Integer port,
+                         String username,
+                         String password,
+                         String defaultDatabaseName,
+                         String filterExpression,
+                         String blacklistExpression,
+                         boolean isGTIDMode) {
+        super(destination);
+
         this.dataDir = fileDataDir;
-        this.destination = destination;
         this.clientIdentity = new ClientIdentity(destination, (short) 1001, "");
         //meta管理
         this.fileMixedMetaManager = new FileMixedMetaManager();

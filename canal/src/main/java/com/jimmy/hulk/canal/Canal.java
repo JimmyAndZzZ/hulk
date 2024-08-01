@@ -84,8 +84,6 @@ public class Canal {
                             canalConfiguration.getFilterExpression(),
                             canalConfiguration.getBlacklistExpression(),
                             canalConfiguration.isGTIDMode());
-                case BINLOG:
-                    return null;
                 default:
                     return null;
             }
