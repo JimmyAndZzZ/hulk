@@ -4,6 +4,7 @@ package com.jimmy.hulk.actuator.memory;
 import cn.hutool.core.collection.CollUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.actuator.base.Segment;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
 import com.jimmy.hulk.common.other.IntObjectHashMap;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.enums.ModuleEnum;
@@ -28,10 +29,19 @@ public class MemoryPool {
 
     private final IntObjectHashMap<Segment> extraPool = new IntObjectHashMap<>(216);
 
-    public MemoryPool() {
+    private static class SingletonHolder {
+
+        private static final MemoryPool INSTANCE = new MemoryPool();
+    }
+
+    private MemoryPool() {
         for (int i = 0; i < BUFFER_SIZE; i++) {
             bufferPool.add(new HeapMemorySegment(DEFAULT_CAPACITY));
         }
+    }
+
+    public static MemoryPool instance() {
+        return MemoryPool.SingletonHolder.INSTANCE;
     }
 
     public List<Integer> allocate(byte[] bytes) {

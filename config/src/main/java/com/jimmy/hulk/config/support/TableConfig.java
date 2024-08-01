@@ -15,6 +15,19 @@ public class TableConfig {
 
     private final Map<String, PartitionConfigProperty> partitionPropertiesMap = Maps.newHashMap();
 
+    private static class SingletonHolder {
+
+        private static final TableConfig INSTANCE = new TableConfig();
+    }
+
+    private TableConfig() {
+
+    }
+
+    public static TableConfig instance() {
+        return TableConfig.SingletonHolder.INSTANCE;
+    }
+
     public void putTableConfig(String dsName, String tableName, TableConfigProperty tableConfigProperty) {
         String key = StrUtil.builder().append(dsName).append(":").append(tableName).toString();
         if (tableConfigPropertyMap.containsKey(key)) {

@@ -1,6 +1,5 @@
 package com.jimmy.hulk.data.other;
 
-import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.runtime.function.AbstractFunction;
 import com.googlecode.aviator.runtime.function.FunctionUtils;
 import com.googlecode.aviator.runtime.type.AviatorBoolean;
@@ -12,11 +11,6 @@ import java.util.Collection;
 import java.util.Map;
 
 public class NotIn extends AbstractFunction {
-
-    static {
-        AviatorEvaluator.addFunction(new NotIn());
-    }
-
 
     @Override
     public AviatorObject call(final Map<String, Object> env, final AviatorObject str, final AviatorObject list) {

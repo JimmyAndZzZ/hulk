@@ -32,8 +32,11 @@ import java.util.stream.Collectors;
 @Slf4j
 abstract class SQL<T> implements Operate {
 
-    @Autowired
     protected PartSupport partSupport;
+
+    protected SQL() {
+        this.partSupport = PartSupport.instance();
+    }
 
     @Override
     public T execute(ParseResultNode parseResultNode) {

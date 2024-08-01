@@ -6,10 +6,23 @@ import lombok.Getter;
 
 import java.util.List;
 
+@Getter
 public class DatabaseConfig {
 
-    @Getter
-    private List<Database> databases = Lists.newArrayList();
+    private final List<Database> databases = Lists.newArrayList();
+
+    private static class SingletonHolder {
+
+        private static final DatabaseConfig INSTANCE = new DatabaseConfig();
+    }
+
+    private DatabaseConfig() {
+
+    }
+
+    public static DatabaseConfig instance() {
+        return DatabaseConfig.SingletonHolder.INSTANCE;
+    }
 
     void add(Database database) {
         databases.add(database);

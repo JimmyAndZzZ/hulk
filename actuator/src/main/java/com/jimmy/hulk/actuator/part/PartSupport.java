@@ -17,10 +17,12 @@ import com.jimmy.hulk.actuator.part.data.AuthenticationData;
 import com.jimmy.hulk.actuator.part.data.GuestData;
 import com.jimmy.hulk.actuator.part.data.PartitionData;
 import com.jimmy.hulk.actuator.part.data.ProxyData;
-import com.jimmy.hulk.authority.base.AuthenticationManager;
+import com.jimmy.hulk.actuator.part.join.InnerJoin;
+import com.jimmy.hulk.actuator.part.join.LeftJoin;
 import com.jimmy.hulk.authority.core.AuthenticationTable;
 import com.jimmy.hulk.authority.core.UserDetail;
 import com.jimmy.hulk.authority.datasource.DatasourceCenter;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import com.jimmy.hulk.common.enums.JoinTypeEnum;
@@ -37,7 +39,6 @@ import com.jimmy.hulk.data.base.Data;
 import com.jimmy.hulk.data.config.DataSourceProperty;
 import com.jimmy.hulk.route.support.ModProxy;
 import org.apache.commons.compress.utils.Lists;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -59,29 +60,22 @@ public class PartSupport {
 
     private final Map<String, Data> authenticationDataMap = Maps.newHashMap();
 
-    @Autowired
-    private ModProxy modProxy;
+    private static class SingletonHolder {
 
-    @Autowired
-    private MemoryPool memoryPool;
+        private static final PartSupport INSTANCE = new PartSupport();
+    }
 
-    @Autowired
-    private TableConfig tableConfig;
+    private PartSupport() {
+        joinMap.put(JoinTypeEnum.INNER,new InnerJoin());
+        joinMap.put(JoinTypeEnum.LEFT,new LeftJoin());
+    }
 
-    @Autowired
-    private DatasourceCenter datasourceCenter;
-
-    @Autowired
-    private ApplicationContext applicationContext;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private SystemVariableContext systemVariableContext;
+    public static PartSupport instance() {
+        return PartSupport.SingletonHolder.INSTANCE;
+    }
 
     public Serializer getSerializer() {
-        return Objects.requireNonNull(SerializerTypeEnum.getByName(systemVariableContext.getSerializerType())).getSerializer();
+        return Objects.requireNonNull(SerializerTypeEnum.getByName(SystemVariableContext.instance().getSerializerType())).getSerializer();
     }
 
     public PriKeyStrategyTypeEnum getPriKeyStrategyType(String priKeyStrategy) {
@@ -94,30 +88,31 @@ public class PartSupport {
 
     public DataSourceProperty getDataSourceProperty(String username, String name, boolean isOnlyRead) {
         //权限验证
-        if (!authenticationManager.checkConfigSchemaByUsername(username, name)) {
+        if (!AuthenticationManagerDelegator.instance().checkConfigSchemaByUsername(username, name)) {
             throw new HulkException(ErrorCode.ER_BAD_DB_ERROR, "权限不足", ModuleEnum.AUTHORITY);
         }
 
-        return datasourceCenter.getDataSourceProperty(name, isOnlyRead);
+        return DatasourceCenter.instance().getDataSourceProperty(name, isOnlyRead);
     }
 
     public Actuator getActuator(String username, String name, boolean isOnlyRead) {
         //权限验证
-        if (!authenticationManager.checkConfigSchemaByUsername(username, name)) {
+        if (!AuthenticationManagerDelegator.instance().checkConfigSchemaByUsername(username, name)) {
             throw new HulkException(ErrorCode.ER_BAD_DB_ERROR, "权限不足", ModuleEnum.AUTHORITY);
         }
 
-        return datasourceCenter.getActuator(name, isOnlyRead);
+        return DatasourceCenter.instance().getActuator(name, isOnlyRead);
     }
 
     public Data getData(String username, String name, String index, String priKeyName, boolean isReadOnly) {
+        AuthenticationManagerDelegator authenticationManager = AuthenticationManagerDelegator.instance();
         //权限验证
         if (!authenticationManager.checkConfigSchemaByUsername(username, name)) {
             throw new HulkException(ErrorCode.ER_BAD_DB_ERROR, "权限不足", ModuleEnum.AUTHORITY);
         }
         //主键名替换
         boolean isNeedReturnPriValue = false;
-        TableConfigProperty tableConfig = this.tableConfig.getTableConfig(name, index);
+        TableConfigProperty tableConfig = TableConfig.instance().getTableConfig(name, index);
         if (tableConfig != null) {
             priKeyName = tableConfig.getPriKeyName();
             isNeedReturnPriValue = this.getPriKeyStrategyType(tableConfig.getPriKeyStrategy()).equals(PriKeyStrategyTypeEnum.AUTO) && tableConfig.getIsNeedReturnKey();
@@ -174,21 +169,11 @@ public class PartSupport {
     }
 
     public boolean isConfigPartition(String name, String index) {
-        return tableConfig.isPartitionTable(name, index);
+        return TableConfig.instance().isPartitionTable(name, index);
     }
 
     public boolean isConfigTableWhenInsert(String name, String index) {
-        return tableConfig.getTableConfig(name, index) != null;
-    }
-
-    public void init() throws Exception {
-        //处理类初始化
-        applicationContext.getBeansOfType(Join.class).values().stream().forEach(bean -> joinMap.put(bean.type(), bean));
-        //加入自定义表达式
-        this.scanFunctionClass();
-        //打开定时器配置
-        CronUtil.setMatchSecond(true);
-        CronUtil.start();
+        return TableConfig.instance().getTableConfig(name, index) != null;
     }
 
     /**
@@ -201,9 +186,9 @@ public class PartSupport {
      * @return
      */
     private Data getData(String name, String index, String priKeyName, boolean isReadOnly, boolean isNeedReturnPriValue) {
-        PartitionConfigProperty partitionConfigProperty = tableConfig.getPartitionConfig(name, index);
+        PartitionConfigProperty partitionConfigProperty = TableConfig.instance().getPartitionConfig(name, index);
         if (partitionConfigProperty == null) {
-            return isReadOnly ? datasourceCenter.getDataFromRead(name, index) : datasourceCenter.getDataFromWrite(name, index, priKeyName, isNeedReturnPriValue);
+            return isReadOnly ? DatasourceCenter.instance().getDataFromRead(name, index) : DatasourceCenter.instance().getDataFromWrite(name, index, priKeyName, isNeedReturnPriValue);
         }
 
         String key = StrUtil.builder().append(name).append(":").append(index).toString();
@@ -212,30 +197,9 @@ public class PartSupport {
             return data;
         }
 
-        data = new PartitionData(modProxy, partitionConfigProperty, memoryPool, this, this.getDataList(partitionConfigProperty.getTableConfigProperties(), partitionConfigProperty.getPriKeyColumn(), partitionConfigProperty.getIsReadOnly(), isNeedReturnPriValue));
+        data = new PartitionData(ModProxy.instance(), partitionConfigProperty, MemoryPool.instance(), this, this.getDataList(partitionConfigProperty.getTableConfigProperties(), partitionConfigProperty.getPriKeyColumn(), partitionConfigProperty.getIsReadOnly(), isNeedReturnPriValue));
         partitionDataMap.put(key, data);
         return data;
-    }
-
-    /**
-     * 扫描自定义函数
-     *
-     * @throws Exception
-     */
-    private void scanFunctionClass() throws Exception {
-        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-        provider.addIncludeFilter(new AssignableTypeFilter(AbstractFunction.class));
-        Set<BeanDefinition> scanList = provider.findCandidateComponents(Constants.Actuator.FUNCTION_PATH);
-        for (BeanDefinition bean : scanList) {
-            Class<?> clazz = Class.forName(bean.getBeanClassName());
-
-            Class<?> superclass = clazz.getSuperclass();
-            if (!superclass.equals(AbstractFunction.class)) {
-                continue;
-            }
-
-            AviatorEvaluator.addFunction((AviatorFunction) clazz.newInstance());
-        }
     }
 
     /**
@@ -258,7 +222,7 @@ public class PartSupport {
 
             if (CollUtil.isNotEmpty(tables)) {
                 for (String table : tables) {
-                    dataList.add(isReadOnly ? datasourceCenter.getDataFromRead(dsName, table) : datasourceCenter.getDataFromWrite(dsName, table, priKeyName, isNeedReturnPriValue));
+                    dataList.add(isReadOnly ? DatasourceCenter.instance().getDataFromRead(dsName, table) : DatasourceCenter.instance().getDataFromWrite(dsName, table, priKeyName, isNeedReturnPriValue));
                 }
             }
 
@@ -266,7 +230,7 @@ public class PartSupport {
                 List<Integer> list = this.getRange(range);
                 if (CollUtil.isNotEmpty(list)) {
                     for (Integer integer : list) {
-                        dataList.add(isReadOnly ? datasourceCenter.getDataFromRead(dsName, StrUtil.builder().append(prefix).append(integer).toString()) : datasourceCenter.getDataFromWrite(dsName, StrUtil.builder().append(prefix).append(integer).toString(), priKeyName, isNeedReturnPriValue));
+                        dataList.add(isReadOnly ? DatasourceCenter.instance().getDataFromRead(dsName, StrUtil.builder().append(prefix).append(integer).toString()) : DatasourceCenter.instance().getDataFromWrite(dsName, StrUtil.builder().append(prefix).append(integer).toString(), priKeyName, isNeedReturnPriValue));
                     }
                 }
             }

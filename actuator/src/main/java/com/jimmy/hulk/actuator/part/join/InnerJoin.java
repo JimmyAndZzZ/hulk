@@ -9,7 +9,6 @@ import com.googlecode.aviator.Expression;
 import com.jimmy.hulk.actuator.core.Fragment;
 import com.jimmy.hulk.actuator.core.Row;
 import com.jimmy.hulk.common.constant.Constants;
-import com.jimmy.hulk.common.enums.JoinTypeEnum;
 import com.jimmy.hulk.parse.core.element.ConditionGroupNode;
 import com.jimmy.hulk.parse.core.element.TableNode;
 import lombok.extern.slf4j.Slf4j;
@@ -67,10 +66,5 @@ public class InnerJoin extends BaseJoin {
         }
 
         return result;
-    }
-
-    @Override
-    public JoinTypeEnum type() {
-        return JoinTypeEnum.INNER;
     }
 }

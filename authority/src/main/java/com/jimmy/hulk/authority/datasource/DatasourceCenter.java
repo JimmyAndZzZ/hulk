@@ -5,7 +5,9 @@ import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.jimmy.hulk.authority.core.UserDetail;
-import com.jimmy.hulk.authority.base.AuthenticationManager;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
+import com.jimmy.hulk.common.core.Column;
+import com.jimmy.hulk.common.core.Table;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.enums.RoleEnum;
@@ -14,11 +16,8 @@ import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.base.Data;
 import com.jimmy.hulk.data.base.DataSource;
 import com.jimmy.hulk.data.config.DataSourceProperty;
-import com.jimmy.hulk.common.core.Column;
-import com.jimmy.hulk.common.core.Table;
 import com.jimmy.hulk.data.support.DataSourceFactory;
 import com.jimmy.hulk.data.support.SessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.util.Collection;
@@ -33,18 +32,22 @@ public class DatasourceCenter {
 
     private final Map<String, DatasourcePoint> datasourcePointMap = Maps.newHashMap();
 
-    @Autowired
-    private SessionFactory sessionFactory;
+    private static class SingletonHolder {
 
-    @Autowired
-    private DataSourceFactory dataSourceFactory;
+        private static final DatasourceCenter INSTANCE = new DatasourceCenter();
+    }
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private DatasourceCenter() {
+
+    }
+
+    public static DatasourceCenter instance() {
+        return DatasourceCenter.SingletonHolder.INSTANCE;
+    }
 
     public Set<String> getSchema(String username) {
-        UserDetail userDetail = authenticationManager.getUserDetail(username);
-        return userDetail.getRole().equals(RoleEnum.ADMINISTRATOR) ? datasourcePointMap.keySet() : authenticationManager.getSchema(username);
+        UserDetail userDetail = AuthenticationManagerDelegator.instance().getUserDetail(username);
+        return userDetail.getRole().equals(RoleEnum.ADMINISTRATOR) ? datasourcePointMap.keySet() : AuthenticationManagerDelegator.instance().getSchema(username);
     }
 
     public List<Table> getTables(String name) {
@@ -83,7 +86,7 @@ public class DatasourceCenter {
             throw new HulkException("该数据源已存在", ModuleEnum.ACTUATOR);
         }
 
-        DataSource write = dataSourceFactory.getDataSource(writeProperty);
+        DataSource write = DataSourceFactory.instance().getDataSource(writeProperty);
         //读取数据库表信息
         Actuator actuator = write.getActuator();
         List<Table> tables = actuator.getTables(writeProperty.getSchema());
@@ -91,7 +94,7 @@ public class DatasourceCenter {
             this.tables.put(name, tables);
         }
 
-        List<DataSource> read = CollUtil.isEmpty(readProperties) ? Lists.newLinkedList() : readProperties.stream().map(bean -> dataSourceFactory.getDataSource(bean)).collect(Collectors.toList());
+        List<DataSource> read = CollUtil.isEmpty(readProperties) ? Lists.newLinkedList() : readProperties.stream().map(bean -> DataSourceFactory.instance().getDataSource(bean)).collect(Collectors.toList());
         datasourcePointMap.put(name, new DatasourcePoint(name, write, read, isReadOnly));
     }
 
@@ -120,7 +123,7 @@ public class DatasourceCenter {
         }
 
         DataSource read = datasourcePoint.getRead();
-        return sessionFactory.registeredData(read, index, "ID");
+        return SessionFactory.instance().registeredData(read, index, "ID");
     }
 
     public Data getDataFromWrite(String name, String index, String priKeyName, boolean isNeedReturnPriValue) {
@@ -134,6 +137,6 @@ public class DatasourceCenter {
         }
 
         DataSource write = datasourcePoint.getWrite();
-        return sessionFactory.registeredData(write, index, priKeyName, !write.getDataSourceProperty().getDs().equals(DatasourceEnum.EXCEL), isNeedReturnPriValue);
+        return SessionFactory.instance().registeredData(write, index, priKeyName, !write.getDataSourceProperty().getDs().equals(DatasourceEnum.EXCEL), isNeedReturnPriValue);
     }
 }

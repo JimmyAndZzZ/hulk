@@ -31,11 +31,7 @@ public class Cache extends SQL<List<Map<String, Object>>> {
 
     private final Map<String, CountDownLatch> wait = Maps.newConcurrentMap();
 
-    @Autowired
     private Select select;
-
-    @Autowired
-    private SystemVariableContext systemVariableContext;
 
     @Override
     public List<Map<String, Object>> process(ParseResultNode parseResultNode) throws Exception {
@@ -50,7 +46,7 @@ public class Cache extends SQL<List<Map<String, Object>>> {
                 ExecuteHolder.setDatasourceName(dsName);
             }
             //后缀处理
-            String fileStorePath = systemVariableContext.getFileStorePath();
+            String fileStorePath = SystemVariableContext.instance().getFileStorePath();
             String dirPath = StrUtil.builder().append(fileStorePath).append(CACHE_FILE_PATH).toString();
             //创建文件夹
             if (!FileUtil.exist(dirPath)) {

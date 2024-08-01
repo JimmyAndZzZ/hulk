@@ -13,10 +13,6 @@ import java.util.Map;
 
 public class In extends AbstractFunction {
 
-    static {
-        AviatorEvaluator.addFunction(new In());
-    }
-
     @Override
     public AviatorObject call(final Map<String, Object> env, final AviatorObject str, final AviatorObject list) {
         Object javaObject = FunctionUtils.getJavaObject(str, env);

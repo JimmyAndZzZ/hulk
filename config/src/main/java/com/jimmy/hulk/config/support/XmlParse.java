@@ -6,8 +6,8 @@ import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.jimmy.hulk.authority.base.AuthenticationManager;
 import com.jimmy.hulk.authority.datasource.DatasourceCenter;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
 import com.jimmy.hulk.common.core.Database;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
@@ -21,32 +21,17 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultCDATA;
 import org.dom4j.tree.DefaultText;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/////初始化
 @Slf4j
 public class XmlParse {
 
     private static final String CONFIG_XML_PATH = "booster.xml";
-
-    @Autowired
-    private TableConfig tableConfig;
-
-    @Autowired
-    private DatabaseConfig databaseConfig;
-
-    @Autowired
-    private DatasourceCenter datasourceCenter;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private SystemVariableContext systemVariableContext;
 
     public void parse() {
         Map<String, DatasourceConfigProperty> propertiesMap = Maps.newHashMap();
@@ -151,27 +136,27 @@ public class XmlParse {
                     }
 
                     if (name.equalsIgnoreCase("pageSize")) {
-                        systemVariableContext.setPageSize(Integer.valueOf(value));
+                        SystemVariableContext.instance().setPageSize(Integer.valueOf(value));
                     }
 
                     if (name.equalsIgnoreCase("fileStorePath")) {
-                        systemVariableContext.setFileStorePath(value);
+                        SystemVariableContext.instance().setFileStorePath(value);
                     }
 
                     if (name.equalsIgnoreCase("serializerType")) {
-                        systemVariableContext.setSerializerType(value);
+                        SystemVariableContext.instance().setSerializerType(value);
                     }
 
                     if (name.equalsIgnoreCase("defaultExpire")) {
-                        systemVariableContext.setDefaultExpire(Integer.valueOf(value));
+                        SystemVariableContext.instance().setDefaultExpire(Integer.valueOf(value));
                     }
 
                     if (name.equalsIgnoreCase("port")) {
-                        systemVariableContext.setPort(Integer.valueOf(value));
+                        SystemVariableContext.instance().setPort(Integer.valueOf(value));
                     }
 
                     if (name.equalsIgnoreCase("transactionTimeout")) {
-                        systemVariableContext.setTransactionTimeout(Integer.valueOf(value));
+                        SystemVariableContext.instance().setTransactionTimeout(Integer.valueOf(value));
                     }
                 }
             }
@@ -192,7 +177,7 @@ public class XmlParse {
         userConfigProperty.setUsername(username);
         userConfigProperty.setPassword(password);
         userConfigProperty.setRole(StrUtil.isNotBlank(role) ? RoleEnum.valueOf(role) : RoleEnum.GUEST);
-        authenticationManager.registerUser(userConfigProperty.buildUserDetail());
+        AuthenticationManagerDelegator.instance().registerUser(userConfigProperty.buildUserDetail());
 
         List<Element> schemas = element.elements("schema");
         if (CollUtil.isNotEmpty(schemas)) {
@@ -245,7 +230,7 @@ public class XmlParse {
             }
         }
 
-        authenticationManager.configSchema(userConfigProperty.getUsername(), schemaConfigProperty.buildAuthenticationSchema());
+        AuthenticationManagerDelegator.instance().configSchema(userConfigProperty.getUsername(), schemaConfigProperty.buildAuthenticationSchema());
     }
 
     /**
@@ -304,14 +289,14 @@ public class XmlParse {
             }
         }
 
-        datasourceCenter.add(name, writeDatasourceConfigProperty.getDataSourceProperty(), readDataSourceProperties, isReadOnly);
+        DatasourceCenter.instance().add(name, writeDatasourceConfigProperty.getDataSourceProperty(), readDataSourceProperties, isReadOnly);
         this.tableConfigParse(example, name);
 
         Database database = new Database();
         database.setTitle(StrUtil.emptyToDefault(title, name));
         database.setDsName(name);
         database.setDs(writeDatasourceConfigProperty.getDs());
-        databaseConfig.add(database);
+        DatabaseConfig.instance().add(database);
     }
 
     /**
@@ -332,7 +317,7 @@ public class XmlParse {
             tableConfigProperty.setPriKeyName(this.getAttributeValue(partition, "priKeyName", true));
             tableConfigProperty.setPriKeyStrategy(this.getAttributeValue(partition, "priKeyStrategy", true));
             tableConfigProperty.setIsNeedReturnKey(Convert.toBool(this.getAttributeValue(partition, "isNeedReturnKey", false), false));
-            tableConfig.putTableConfig(dsName, tableConfigProperty.getTableName(), tableConfigProperty);
+            TableConfig.instance().putTableConfig(dsName, tableConfigProperty.getTableName(), tableConfigProperty);
         }
     }
 
@@ -385,7 +370,7 @@ public class XmlParse {
                 partitionConfigProperty.getTableConfigProperties().add(partitionTableConfigProperty);
             }
 
-            tableConfig.putPartitionConfig(partitionConfigProperty.getDsName(), partitionConfigProperty.getTable(), partitionConfigProperty);
+            TableConfig.instance().putPartitionConfig(partitionConfigProperty.getDsName(), partitionConfigProperty.getTable(), partitionConfigProperty);
         }
     }
 

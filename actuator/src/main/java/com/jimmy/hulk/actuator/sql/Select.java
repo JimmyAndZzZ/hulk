@@ -46,12 +46,6 @@ public class Select extends SQL<List<Map<String, Object>>> {
 
     private final Map<String, String> randomFieldCache = Maps.newHashMap();
 
-    @Autowired
-    private MemoryPool memoryPool;
-
-    @Autowired
-    private SystemVariableContext systemVariableContext;
-
     @Override
     public List<Map<String, Object>> process(ParseResultNode parseResultNode) {
         try {
@@ -97,7 +91,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //释放内存
             Set<Integer> indexes = ExecuteHolder.getIndexes();
             if (CollUtil.isNotEmpty(indexes)) {
-                memoryPool.free(indexes);
+                MemoryPool.instance().free(indexes);
             }
         }
     }
@@ -152,7 +146,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
      * @return
      */
     private boolean continueNextCycle(ParseResultNode parseResultNode, int size) {
-        if (size == 0 || size < systemVariableContext.getPageSize()) {
+        if (size == 0 || size < SystemVariableContext.instance().getPageSize()) {
             return false;
         }
 
@@ -379,7 +373,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             }
             //先排序在查询,防止后续排序
             while (true) {
-                List<Map<String, Object>> maps = data.queryPageList(build, new Page(pageNo++, systemVariableContext.getPageSize()));
+                List<Map<String, Object>> maps = data.queryPageList(build, new Page(pageNo++, SystemVariableContext.instance().getPageSize()));
                 if (CollUtil.isEmpty(maps)) {
                     break;
                 }
@@ -493,7 +487,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
                 params.put(key.getAlias(), keyMap);
                 //显示字段填充
                 if (CollUtil.isNotEmpty(index)) {
-                    map.putAll(partSupport.getSerializer().deserialize(memoryPool.get(index)));
+                    map.putAll(partSupport.getSerializer().deserialize(MemoryPool.instance().get(index)));
                 }
                 //普通字段
                 if (CollUtil.isNotEmpty(commonColumns)) {
@@ -797,7 +791,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
             }
             //全字段
             if (isAllFields) {
-                fragment.setIndex(memoryPool.allocate(partSupport.getSerializer().serialize(map)));
+                fragment.setIndex(MemoryPool.instance().allocate(partSupport.getSerializer().serialize(map)));
             } else {
                 if (CollUtil.isNotEmpty(selectColumns)) {
                     //字段过滤
@@ -806,7 +800,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
                         mapper.put(selectColumn.getAlias(), map.get(selectColumn.getName()));
                     }
 
-                    fragment.setIndex(memoryPool.allocate(partSupport.getSerializer().serialize(mapper)));
+                    fragment.setIndex(MemoryPool.instance().allocate(partSupport.getSerializer().serialize(mapper)));
                 }
             }
 
@@ -1140,7 +1134,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
      * @return
      */
     private List<Fragment> queryData(TableNode tableNode, Integer pageNo, Wrapper wrapper) {
-        List<Map<String, Object>> maps = partSupport.getData(ExecuteHolder.getUsername(), tableNode.getDsName(), tableNode.getTableName(), null, true).queryPageList(wrapper, new Page(pageNo, systemVariableContext.getPageSize()));
+        List<Map<String, Object>> maps = partSupport.getData(ExecuteHolder.getUsername(), tableNode.getDsName(), tableNode.getTableName(), null, true).queryPageList(wrapper, new Page(pageNo, SystemVariableContext.instance().getPageSize()));
         return this.fragmentGenerate(maps, tableNode);
     }
 
@@ -1399,7 +1393,7 @@ public class Select extends SQL<List<Map<String, Object>>> {
                 //注入参数
                 params.put(key.getAlias(), value.getKey());
                 //反序列化
-                Map<String, Object> deserialize = CollUtil.isEmpty(index) ? value.getKey() : partSupport.getSerializer().deserialize(memoryPool.get(index));
+                Map<String, Object> deserialize = CollUtil.isEmpty(index) ? value.getKey() : partSupport.getSerializer().deserialize(MemoryPool.instance().get(index));
                 if (MapUtil.isNotEmpty(deserialize)) {
                     String fillFieldName = fillFields.get(key);
                     for (Map.Entry<String, Object> entry : deserialize.entrySet()) {

@@ -9,8 +9,6 @@ public interface Constants {
 
         String ALL_COLUMN = "*";
 
-        String FUNCTION_PATH = "com.jimmy.hulk.actuator.function";
-
         interface CacheKey {
             String SELECT_COLUMNS_KEY = "select:columns:";
 

@@ -8,13 +8,12 @@ import com.google.common.collect.Maps;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.Expression;
 import com.jimmy.hulk.actuator.core.Fragment;
+import com.jimmy.hulk.actuator.core.Null;
 import com.jimmy.hulk.actuator.core.Row;
 import com.jimmy.hulk.actuator.memory.MemoryPool;
 import com.jimmy.hulk.actuator.part.PartSupport;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
-import com.jimmy.hulk.actuator.core.Null;
 import com.jimmy.hulk.common.constant.Constants;
-import com.jimmy.hulk.common.enums.JoinTypeEnum;
 import com.jimmy.hulk.parse.core.element.ColumnNode;
 import com.jimmy.hulk.parse.core.element.ConditionGroupNode;
 import com.jimmy.hulk.parse.core.element.TableNode;
@@ -89,11 +88,6 @@ public class LeftJoin extends BaseJoin {
         }
 
         return result;
-    }
-
-    @Override
-    public JoinTypeEnum type() {
-        return JoinTypeEnum.LEFT;
     }
 
     /**

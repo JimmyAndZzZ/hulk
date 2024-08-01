@@ -3,31 +3,42 @@ package com.jimmy.hulk.config.support;
 
 import cn.hutool.core.util.StrUtil;
 import com.jimmy.hulk.common.constant.Constants;
+import lombok.Getter;
 
 public class SystemVariableContext {
 
+    @Getter
     private Integer pageSize = 200;
 
     private String fileStorePath = "/tmp/";
 
+    @Getter
     private String serializerType = "kryo";
 
+    @Getter
     private Integer port = 6033;
 
+    @Getter
     private Integer defaultExpire = 30;
 
+    @Getter
     private Integer transactionTimeout = 60;
 
-    public Integer getTransactionTimeout() {
-        return transactionTimeout;
+    private static class SingletonHolder {
+
+        private static final SystemVariableContext INSTANCE = new SystemVariableContext();
+    }
+
+    private SystemVariableContext() {
+
+    }
+
+    public static SystemVariableContext instance() {
+        return SingletonHolder.INSTANCE;
     }
 
     void setTransactionTimeout(Integer transactionTimeout) {
         this.transactionTimeout = transactionTimeout;
-    }
-
-    public Integer getPageSize() {
-        return pageSize;
     }
 
     public String getFileStorePath() {
@@ -36,14 +47,6 @@ public class SystemVariableContext {
         }
 
         return fileStorePath;
-    }
-
-    public String getSerializerType() {
-        return serializerType;
-    }
-
-    public Integer getPort() {
-        return port;
     }
 
     void setPort(Integer port) {
@@ -60,10 +63,6 @@ public class SystemVariableContext {
 
     void setSerializerType(String serializerType) {
         this.serializerType = serializerType;
-    }
-
-    public Integer getDefaultExpire() {
-        return defaultExpire;
     }
 
     void setDefaultExpire(Integer defaultExpire) {

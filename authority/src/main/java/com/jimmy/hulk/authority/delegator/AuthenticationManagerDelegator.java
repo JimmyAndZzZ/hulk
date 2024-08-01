@@ -1,9 +1,8 @@
-package com.jimmy.hulk.authority.support;
+package com.jimmy.hulk.authority.delegator;
 
 import cn.hutool.core.collection.CollUtil;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.jimmy.hulk.authority.base.AuthenticationManager;
 import com.jimmy.hulk.authority.core.AuthenticationTable;
 import com.jimmy.hulk.authority.core.UserDetail;
 import com.jimmy.hulk.authority.core.AuthenticationSchema;
@@ -15,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class AuthenticationManagerDelegator implements AuthenticationManager {
+public class AuthenticationManagerDelegator {
 
     private final Set<String> deny = Sets.newHashSet();
 
@@ -25,13 +24,24 @@ public class AuthenticationManagerDelegator implements AuthenticationManager {
 
     private final Map<String, AuthenticationTable> tableContext = Maps.newHashMap();
 
-    @Override
+    private static class SingletonHolder {
+
+        private static final AuthenticationManagerDelegator INSTANCE = new AuthenticationManagerDelegator();
+    }
+
+    private AuthenticationManagerDelegator() {
+
+    }
+
+    public static AuthenticationManagerDelegator instance() {
+        return AuthenticationManagerDelegator.SingletonHolder.INSTANCE;
+    }
+
     public AuthenticationTable getAuthenticationTable(String username, String dsName, String tableName) {
         StringBuilder sb = new StringBuilder(username).append(":").append(dsName).append(":").append(tableName);
         return tableContext.get(sb.toString());
     }
 
-    @Override
     public boolean allowExecuteSQL(String username, String dsName, String tableName) {
         UserDetail userDetail = userContext.get(username);
         if (userDetail.getRole().equals(RoleEnum.GUEST)) {
@@ -51,7 +61,6 @@ public class AuthenticationManagerDelegator implements AuthenticationManager {
         return true;
     }
 
-    @Override
     public void registerUser(UserDetail userDetail) {
         String username = userDetail.getUsername();
         if (userContext.containsKey(username)) {
@@ -61,12 +70,10 @@ public class AuthenticationManagerDelegator implements AuthenticationManager {
         userContext.put(username, userDetail);
     }
 
-    @Override
     public UserDetail getUserDetail(String username) {
         return userContext.get(username);
     }
 
-    @Override
     public void configSchema(String username, AuthenticationSchema authenticationSchema) {
         String dsName = authenticationSchema.getDsName();
         Boolean isAllAllow = authenticationSchema.getIsAllAllow();
@@ -95,7 +102,6 @@ public class AuthenticationManagerDelegator implements AuthenticationManager {
         }
     }
 
-    @Override
     public boolean checkConfigSchemaByUsername(String username, String schema) {
         UserDetail userDetail = userContext.get(username);
         if (userDetail == null) {
@@ -110,7 +116,6 @@ public class AuthenticationManagerDelegator implements AuthenticationManager {
         return CollUtil.isEmpty(authenticationSchemas) ? false : authenticationSchemas.contains(schema);
     }
 
-    @Override
     public Set<String> getSchema(String username) {
         Set<String> authenticationSchemas = schemaContext.get(username);
         return CollUtil.isEmpty(authenticationSchemas) ? Sets.newHashSet() : authenticationSchemas;
