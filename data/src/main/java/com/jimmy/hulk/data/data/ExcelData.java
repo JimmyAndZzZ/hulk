@@ -14,8 +14,6 @@ import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.ExcelCondition;
 import com.jimmy.hulk.data.core.*;
 import com.jimmy.hulk.data.other.DynamicReadListener;
 import com.jimmy.hulk.data.other.ExcelProperties;
@@ -31,10 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.EXCEL;
-
 @Slf4j
-@DS(type = EXCEL, condition = ExcelCondition.class)
 public class ExcelData extends BaseData {
 
     private String path;

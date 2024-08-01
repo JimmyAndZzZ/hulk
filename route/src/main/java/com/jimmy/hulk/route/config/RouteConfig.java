@@ -9,11 +9,6 @@ import org.springframework.context.annotation.Configuration;
 public class RouteConfig {
 
     @Bean
-    public ModProxy modFactory() {
-        return new ModProxy();
-    }
-
-    @Bean
     public RouteInitialize routeInitialize() {
         return new RouteInitialize();
     }

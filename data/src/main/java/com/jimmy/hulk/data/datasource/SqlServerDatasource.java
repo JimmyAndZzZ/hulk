@@ -29,18 +29,16 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-@Conditional(SqlServerCondition.class)
-@DS(type = DatasourceEnum.SQL_SERVER, condition = SqlServerCondition.class)
 public class SqlServerDatasource extends BaseDatasource<javax.sql.DataSource> {
 
-    private static ConcurrentMap<String, HikariDataSource> dsCache = Maps.newConcurrentMap();
+    private static ConcurrentMap<String, HikariDataSource> DS_CACHE = Maps.newConcurrentMap();
 
     @Override
     public void close() throws IOException {
         String name = dataSourceProperty.getName();
-        HikariDataSource hikariDataSource = dsCache.get(name);
+        HikariDataSource hikariDataSource = DS_CACHE.get(name);
         if (hikariDataSource != null) {
-            dsCache.remove(name);
+            DS_CACHE.remove(name);
             hikariDataSource.close();
         }
     }
@@ -58,13 +56,13 @@ public class SqlServerDatasource extends BaseDatasource<javax.sql.DataSource> {
     @Override
     public javax.sql.DataSource getDataSource(Long timeout) {
         String name = dataSourceProperty.getName();
-        HikariDataSource dataSource = dsCache.get(name);
+        HikariDataSource dataSource = DS_CACHE.get(name);
         if (dataSource != null) {
             return dataSource;
         }
 
         dataSource = (HikariDataSource) this.getDataSourceWithoutCache(timeout);
-        HikariDataSource put = dsCache.putIfAbsent(name, dataSource);
+        HikariDataSource put = DS_CACHE.putIfAbsent(name, dataSource);
         if (put != null) {
             dataSource.close();
             return put;

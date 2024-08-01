@@ -2,7 +2,6 @@ package com.jimmy.hulk.data.field;
 
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.FieldMapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +10,6 @@ import static com.jimmy.hulk.common.enums.DatasourceEnum.CLICK_HOUSE;
 
 @Getter
 @AllArgsConstructor
-@DS(type = CLICK_HOUSE)
 public enum ClickHouseMapper implements FieldMapper {
 
     VARCHAR(FieldTypeEnum.VARCHAR, "String", null, true),

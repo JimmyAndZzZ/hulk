@@ -4,14 +4,11 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
-import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.ClickHouseCondition;
-import com.jimmy.hulk.data.other.ConditionPart;
 import com.jimmy.hulk.data.core.Page;
 import com.jimmy.hulk.data.core.Wrapper;
+import com.jimmy.hulk.data.other.ConditionPart;
 import com.jimmy.hulk.data.utils.ClickHouseUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -24,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 
 @Slf4j
-@DS(type = DatasourceEnum.CLICK_HOUSE, condition = ClickHouseCondition.class)
 public class ClickHouseData extends BaseData {
 
     private static final String DELETE_CONDITION_TEMPLATE = "ALTER TABLE {} on cluster {} DELETE {}";

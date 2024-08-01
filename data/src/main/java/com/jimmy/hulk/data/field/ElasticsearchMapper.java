@@ -1,9 +1,8 @@
 package com.jimmy.hulk.data.field;
 
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.base.FieldMapper;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
+import com.jimmy.hulk.data.base.FieldMapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -11,7 +10,6 @@ import static com.jimmy.hulk.common.enums.DatasourceEnum.ELASTICSEARCH;
 
 @Getter
 @AllArgsConstructor
-@DS(type = ELASTICSEARCH)
 public enum ElasticsearchMapper implements FieldMapper {
     VARCHAR(FieldTypeEnum.VARCHAR, "text", null, false),
     INT(FieldTypeEnum.INT, "integer", null, false),

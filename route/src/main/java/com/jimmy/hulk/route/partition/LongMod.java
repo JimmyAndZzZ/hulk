@@ -9,8 +9,4 @@ public class LongMod implements Mod<Long> {
         return (int) (columnValue % threshold);
     }
 
-    @Override
-    public String name() {
-        return "long-mod";
-    }
 }

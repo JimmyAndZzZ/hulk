@@ -4,9 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.jimmy.hulk.common.enums.ConditionEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.ConditionParse;
-import com.jimmy.hulk.data.condition.ElasticsearchCondition;
 import com.jimmy.hulk.data.core.Condition;
 import org.elasticsearch.index.query.*;
 
@@ -14,9 +12,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.ELASTICSEARCH;
-
-@DS(type = ELASTICSEARCH, condition = ElasticsearchCondition.class)
 public class ElasticsearchConditionParse implements ConditionParse<QueryBuilder> {
 
     @Override

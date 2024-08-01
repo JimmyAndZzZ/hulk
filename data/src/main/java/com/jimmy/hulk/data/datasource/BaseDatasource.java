@@ -8,7 +8,6 @@ import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.base.Connection;
 import com.jimmy.hulk.data.base.DataSource;
 import com.jimmy.hulk.data.base.FieldMapper;
-import com.jimmy.hulk.data.config.DataProperties;
 import com.jimmy.hulk.data.config.DataSourceProperty;
 import com.jimmy.hulk.data.other.ConnectionContext;
 import lombok.Getter;
@@ -34,11 +33,6 @@ public abstract class BaseDatasource<T> implements DataSource<T> {
 
     public void addMapper(FieldTypeEnum fieldType, FieldMapper mapperType) {
         fieldTypeMapper.put(fieldType, mapperType);
-    }
-
-    @Override
-    public void init(DataProperties dataProperties) {
-
     }
 
     @Override

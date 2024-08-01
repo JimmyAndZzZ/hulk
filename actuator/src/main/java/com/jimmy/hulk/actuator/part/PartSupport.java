@@ -45,6 +45,7 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -80,16 +81,11 @@ public class PartSupport {
     private SystemVariableContext systemVariableContext;
 
     public Serializer getSerializer() {
-        return SerializerTypeEnum.getByName(systemVariableContext.getSerializerType()).getSerializer();
+        return Objects.requireNonNull(SerializerTypeEnum.getByName(systemVariableContext.getSerializerType())).getSerializer();
     }
 
     public PriKeyStrategyTypeEnum getPriKeyStrategyType(String priKeyStrategy) {
-        PriKeyStrategyTypeEnum priKeyStrategyTypeEnum = PriKeyStrategyTypeEnum.valueOf(priKeyStrategy.toUpperCase());
-        if (priKeyStrategyTypeEnum == null) {
-            throw new HulkException("主键生成策略错误", ModuleEnum.ACTUATOR);
-        }
-
-        return priKeyStrategyTypeEnum;
+        return PriKeyStrategyTypeEnum.valueOf(priKeyStrategy.toUpperCase());
     }
 
     public Join getJoin(JoinTypeEnum joinTypeEnum) {

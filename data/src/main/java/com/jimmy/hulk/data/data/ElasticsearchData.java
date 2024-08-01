@@ -12,8 +12,6 @@ import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.ElasticsearchCondition;
 import com.jimmy.hulk.data.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
@@ -42,7 +40,6 @@ import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -63,10 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.ELASTICSEARCH;
-
 @Slf4j
-@DS(type = ELASTICSEARCH, condition = ElasticsearchCondition.class)
 public class ElasticsearchData extends BaseData {
 
     private RestHighLevelClient client;

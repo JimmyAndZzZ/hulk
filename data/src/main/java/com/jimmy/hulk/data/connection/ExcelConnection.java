@@ -7,10 +7,7 @@ import com.alibaba.excel.write.metadata.WriteSheet;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.ConnectionType;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.Connection;
-import com.jimmy.hulk.data.condition.ExcelCondition;
 import com.jimmy.hulk.data.other.ConnectionContext;
 import com.jimmy.hulk.data.other.ExcelProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +16,8 @@ import java.io.File;
 import java.util.List;
 
 import static com.jimmy.hulk.common.constant.Constants.Data.EXCEL_PROPERTIES_CONTEXT_KEY;
-import static com.jimmy.hulk.common.enums.DatasourceEnum.EXCEL;
 
 @Slf4j
-@ConnectionType(dsType = {@DS(type = EXCEL, condition = ExcelCondition.class)})
 public class ExcelConnection implements Connection<ExcelWriter, String, List<String>> {
 
     private WriteSheet writeSheet;

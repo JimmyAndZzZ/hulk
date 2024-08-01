@@ -7,12 +7,7 @@ import cn.hutool.db.sql.SqlUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.ConnectionType;
-import com.jimmy.hulk.data.condition.MySQLCondition;
 import com.jimmy.hulk.data.other.ConnectionContext;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.ClickHouseCondition;
-import com.jimmy.hulk.data.condition.OracleCondition;
 import com.jimmy.hulk.data.other.ExecuteBody;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -23,10 +18,7 @@ import java.math.BigInteger;
 import java.sql.*;
 import java.util.List;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.*;
-
 @Slf4j
-@ConnectionType(dsType = {@DS(type = CLICK_HOUSE, condition = ClickHouseCondition.class), @DS(type = MYSQL, condition = MySQLCondition.class), @DS(type = ORACLE, condition = OracleCondition.class)})
 public class DbConnection implements com.jimmy.hulk.data.base.Connection<Connection, DataSource, ExecuteBody> {
 
     private DataSource dataSource;

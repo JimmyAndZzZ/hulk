@@ -16,10 +16,16 @@ import java.util.Map;
 
 public class SessionFactory {
 
-    private Map<String, Data> dataCache = Maps.newHashMap();
+    private final Map<String, Data> dataCache = Maps.newHashMap();
 
-    @Autowired
-    private DataSourceFactory dataSourceFactory;
+    private static class SingletonHolder {
+
+        private static final SessionFactory INSTANCE = new SessionFactory();
+    }
+
+    public static SessionFactory instance() {
+        return SessionFactory.SingletonHolder.INSTANCE;
+    }
 
     /**
      * 注册(非缓存)
@@ -31,6 +37,7 @@ public class SessionFactory {
      * @throws Exception
      */
     public Data registeredNewData(DataSourceProperty dataSourceProperty, String indexName, String priKeyName, boolean isNeedReturnPriValue) {
+        DataSourceFactory dataSourceFactory = DataSourceFactory.instance();
         try {
             DatasourceEnum ds = dataSourceProperty.getDs();
             Class<? extends BaseData> clazz = dataSourceFactory.getDataMap().get(ds);
@@ -80,6 +87,8 @@ public class SessionFactory {
     }
 
     public Data registeredData(DataSource dataSource, String indexName, String priKeyName, boolean isCache, boolean isNeedReturnPriValue) {
+        DataSourceFactory dataSourceFactory = DataSourceFactory.instance();
+
         final DataSourceProperty dataSourceProperty = dataSource.getDataSourceProperty();
         String key = new StringBuilder(dataSourceProperty.getName()).append(":").append(indexName).toString();
         //缓存获取

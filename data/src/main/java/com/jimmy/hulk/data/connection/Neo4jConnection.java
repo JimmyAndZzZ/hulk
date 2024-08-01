@@ -1,9 +1,6 @@
 package com.jimmy.hulk.data.connection;
 
-import com.jimmy.hulk.data.annotation.ConnectionType;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.Connection;
-import com.jimmy.hulk.data.condition.Neo4jCondition;
 import com.jimmy.hulk.data.other.ConnectionContext;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Driver;
@@ -12,10 +9,7 @@ import org.neo4j.driver.Transaction;
 
 import java.util.List;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.NEO4J;
-
 @Slf4j
-@ConnectionType(dsType = {@DS(type = NEO4J, condition = Neo4jCondition.class)})
 public class Neo4jConnection implements Connection<Transaction, Driver, String> {
 
     private Driver driver;

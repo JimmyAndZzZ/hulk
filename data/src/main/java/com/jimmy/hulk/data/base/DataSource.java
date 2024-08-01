@@ -1,11 +1,10 @@
 package com.jimmy.hulk.data.base;
 
-import com.jimmy.hulk.data.core.Dump;
-import com.jimmy.hulk.data.actuator.Actuator;
-import com.jimmy.hulk.data.config.DataSourceProperty;
-import com.jimmy.hulk.data.config.DataProperties;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
+import com.jimmy.hulk.data.actuator.Actuator;
+import com.jimmy.hulk.data.config.DataSourceProperty;
+import com.jimmy.hulk.data.core.Dump;
 import com.jimmy.hulk.data.other.ConnectionContext;
 
 import java.io.Closeable;
@@ -33,5 +32,4 @@ public interface DataSource<T> extends Closeable {
 
     Connection getConnection(ConnectionContext context);
 
-    void init(DataProperties dataProperties);
 }

@@ -1,26 +1,20 @@
 package com.jimmy.hulk.data.datasource;
 
 import com.google.common.collect.Maps;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.Neo4jActuator;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.ElasticsearchCondition;
-import com.jimmy.hulk.data.condition.Neo4jCondition;
 import com.jimmy.hulk.data.core.Dump;
-import com.jimmy.hulk.common.enums.DatasourceEnum;
 import org.neo4j.driver.*;
-import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 import java.util.Map;
 
 import static com.jimmy.hulk.common.enums.DatasourceEnum.NEO4J;
 
-@Conditional(Neo4jCondition.class)
-@DS(type = NEO4J, condition = Neo4jCondition.class)
 public class Neo4jDatasource extends BaseDatasource<Driver> {
 
-    private static Map<String, Driver> neo4jCache = Maps.newConcurrentMap();
+    private static final Map<String, Driver> NEO4J_CACHE = Maps.newConcurrentMap();
 
     @Override
     public void close() throws IOException {
@@ -84,14 +78,14 @@ public class Neo4jDatasource extends BaseDatasource<Driver> {
         String username = dataSourceProperty.getUsername();
         String password = dataSourceProperty.getPassword();
 
-        Driver driver = neo4jCache.get(name);
+        Driver driver = NEO4J_CACHE.get(name);
         if (driver != null) {
             return driver;
         }
 
         driver = GraphDatabase.driver(url, AuthTokens.basic(username, password));
 
-        Driver put = neo4jCache.putIfAbsent(name, driver);
+        Driver put = NEO4J_CACHE.putIfAbsent(name, driver);
         if (put != null) {
             driver.close();
             return put;

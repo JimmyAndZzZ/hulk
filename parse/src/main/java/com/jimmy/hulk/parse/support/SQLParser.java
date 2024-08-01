@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SQLParser {
 
-    public ParseResultNode parse(String sql) {
+    public static ParseResultNode parse(String sql) {
         try {
             //部分框架提交sql会带有末尾封号
             if (StrUtil.endWithIgnoreCase(sql, ";")) {
@@ -50,19 +50,19 @@ public class SQLParser {
             SqlNode sqlNode = parser.parseQuery();
             //更新解析
             if (sqlNode instanceof SqlUpdate) {
-                ParseResultNode parseResultNode = this.updateParse((SqlUpdate) sqlNode);
+                ParseResultNode parseResultNode = updateParse((SqlUpdate) sqlNode);
                 parseResultNode.setSql(sql);
                 return parseResultNode;
             }
             //插入解析
             if (sqlNode instanceof SqlInsert) {
-                ParseResultNode parseResultNode = this.insertParse((SqlInsert) sqlNode);
+                ParseResultNode parseResultNode = insertParse((SqlInsert) sqlNode);
                 parseResultNode.setSql(sql);
                 return parseResultNode;
             }
             //删除解析
             if (sqlNode instanceof SqlDelete) {
-                ParseResultNode parseResultNode = this.deleteParse((SqlDelete) sqlNode);
+                ParseResultNode parseResultNode = deleteParse((SqlDelete) sqlNode);
                 parseResultNode.setSql(sql);
                 return parseResultNode;
             }
@@ -71,11 +71,11 @@ public class SQLParser {
                 SqlNative sqlNative = (SqlNative) sqlNode;
 
                 ExtraNode extraNode = new ExtraNode();
-                extraNode.setDsName(this.getNodeStr(sqlNative.getDsName()));
+                extraNode.setDsName(getNodeStr(sqlNative.getDsName()));
                 extraNode.setIsExecute(sqlNative.getIsExecute());
 
                 ParseResultNode parseResultNode = new ParseResultNode();
-                parseResultNode.setSql(this.getNodeStr(sqlNative.getSql()));
+                parseResultNode.setSql(getNodeStr(sqlNative.getSql()));
                 parseResultNode.setExtraNode(extraNode);
                 parseResultNode.setResultType(ResultTypeEnum.NATIVE);
                 return parseResultNode;
@@ -85,15 +85,15 @@ public class SQLParser {
                 SqlJob sqlJob = (SqlJob) sqlNode;
 
                 ExtraNode extraNode = new ExtraNode();
-                extraNode.setName(this.getNodeStr(sqlJob.getName()));
-                extraNode.setCron(this.getNodeStr(sqlJob.getCron()));
+                extraNode.setName(getNodeStr(sqlJob.getName()));
+                extraNode.setCron(getNodeStr(sqlJob.getCron()));
 
-                ParseResultNode parseResultNode = this.parse(this.getNodeStr(sqlJob.getSql()));
+                ParseResultNode parseResultNode = parse(getNodeStr(sqlJob.getSql()));
                 if (!parseResultNode.getResultType().equals(ResultTypeEnum.SELECT)) {
                     throw new HulkException("只支持查询操作", ModuleEnum.PARSE);
                 }
 
-                parseResultNode.setSql(this.getNodeStr(sqlJob.getSql()));
+                parseResultNode.setSql(getNodeStr(sqlJob.getSql()));
                 parseResultNode.setResultType(ResultTypeEnum.JOB);
                 parseResultNode.setExtraNode(extraNode);
                 return parseResultNode;
@@ -103,15 +103,15 @@ public class SQLParser {
                 SqlCacheQuery sqlCacheQuery = (SqlCacheQuery) sqlNode;
 
                 ExtraNode extraNode = new ExtraNode();
-                extraNode.setExpire(this.getNodeStr(sqlCacheQuery.getExpireTime()));
-                extraNode.setDsName(this.getNodeStr(sqlCacheQuery.getDsName()));
+                extraNode.setExpire(getNodeStr(sqlCacheQuery.getExpireTime()));
+                extraNode.setDsName(getNodeStr(sqlCacheQuery.getDsName()));
 
-                ParseResultNode parseResultNode = this.parse(this.getNodeStr(sqlCacheQuery.getSql()));
+                ParseResultNode parseResultNode = parse(getNodeStr(sqlCacheQuery.getSql()));
                 if (!parseResultNode.getResultType().equals(ResultTypeEnum.SELECT)) {
                     throw new HulkException("只支持查询操作", ModuleEnum.PARSE);
                 }
 
-                parseResultNode.setSql(this.getNodeStr(sqlCacheQuery.getSql()));
+                parseResultNode.setSql(getNodeStr(sqlCacheQuery.getSql()));
                 parseResultNode.setResultType(ResultTypeEnum.CACHE);
                 parseResultNode.setExtraNode(extraNode);
                 return parseResultNode;
@@ -121,29 +121,29 @@ public class SQLParser {
                 SqlFlush sqlFlush = (SqlFlush) sqlNode;
 
                 ExtraNode extraNode = new ExtraNode();
-                extraNode.setIndex(this.getNodeStr(sqlFlush.getIndex()));
-                extraNode.setDsName(this.getNodeStr(sqlFlush.getDsName()));
-                extraNode.setMapper(this.getNodeStr(sqlFlush.getMapper()));
+                extraNode.setIndex(getNodeStr(sqlFlush.getIndex()));
+                extraNode.setDsName(getNodeStr(sqlFlush.getDsName()));
+                extraNode.setMapper(getNodeStr(sqlFlush.getMapper()));
 
-                ParseResultNode parseResultNode = this.parse(this.getNodeStr(sqlFlush.getSql()));
+                ParseResultNode parseResultNode = parse(getNodeStr(sqlFlush.getSql()));
                 if (!parseResultNode.getResultType().equals(ResultTypeEnum.SELECT)) {
                     throw new HulkException("只支持查询操作", ModuleEnum.PARSE);
                 }
 
-                parseResultNode.setSql(this.getNodeStr(sqlFlush.getSql()));
+                parseResultNode.setSql(getNodeStr(sqlFlush.getSql()));
                 parseResultNode.setResultType(ResultTypeEnum.FLUSH);
                 parseResultNode.setExtraNode(extraNode);
                 return parseResultNode;
             }
 
             if (sqlNode instanceof SqlSelect) {
-                ParseResultNode parse = this.parse((SqlSelect) sqlNode);
+                ParseResultNode parse = parse((SqlSelect) sqlNode);
                 parse.setSql(sql);
                 return parse;
             }
 
             if (sqlNode instanceof SqlOrderBy) {
-                ParseResultNode parse = this.parse((SqlOrderBy) sqlNode);
+                ParseResultNode parse = parse((SqlOrderBy) sqlNode);
                 parse.setSql(sql);
                 return parse;
             }
@@ -163,17 +163,17 @@ public class SQLParser {
      * @param sqlDelete
      * @return
      */
-    private ParseResultNode deleteParse(SqlDelete sqlDelete) {
+    private static ParseResultNode deleteParse(SqlDelete sqlDelete) {
         ParseResultNode deleteNode = new ParseResultNode();
         deleteNode.setResultType(ResultTypeEnum.DELETE);
 
         SqlNode targetTable = sqlDelete.getTargetTable();
         SqlNode condition = sqlDelete.getCondition();
         //表解析
-        TableNode tableNode = this.parseTableNode(targetTable);
+        TableNode tableNode = parseTableNode(targetTable);
         deleteNode.setTableNodes(Lists.newArrayList(tableNode));
         //解析where条件
-        this.parseWhereNode(null, condition, deleteNode, null);
+        parseWhereNode(null, condition, deleteNode, null);
         return deleteNode;
     }
 
@@ -183,7 +183,7 @@ public class SQLParser {
      * @param sqlInsert
      * @return
      */
-    private ParseResultNode insertParse(SqlInsert sqlInsert) {
+    private static ParseResultNode insertParse(SqlInsert sqlInsert) {
         ParseResultNode insertNode = new ParseResultNode();
         insertNode.setResultType(ResultTypeEnum.INSERT);
 
@@ -208,13 +208,13 @@ public class SQLParser {
                     SqlNode value = call.operands[i];
                     SqlNode key = targetColumnList.get(i);
 
-                    ColumnNode column = this.columnPretreatment(key, value, insertNode);
+                    ColumnNode column = columnPretreatment(key, value, insertNode);
                     insertNode.getColumns().add(column);
                 }
             }
         }
         //表解析
-        TableNode tableNode = this.parseTableNode(targetTable);
+        TableNode tableNode = parseTableNode(targetTable);
         insertNode.setTableNodes(Lists.newArrayList(tableNode));
         return insertNode;
     }
@@ -225,7 +225,7 @@ public class SQLParser {
      * @param sqlUpdate
      * @return
      */
-    private ParseResultNode updateParse(SqlUpdate sqlUpdate) {
+    private static ParseResultNode updateParse(SqlUpdate sqlUpdate) {
         ParseResultNode updateNode = new ParseResultNode();
         updateNode.setResultType(ResultTypeEnum.UPDATE);
 
@@ -234,18 +234,18 @@ public class SQLParser {
         SqlNodeList targetColumnList = sqlUpdate.getTargetColumnList();
         SqlNodeList sourceExpressionList = sqlUpdate.getSourceExpressionList();
         //表解析
-        TableNode tableNode = this.parseTableNode(targetTable);
+        TableNode tableNode = parseTableNode(targetTable);
         updateNode.setTableNodes(Lists.newArrayList(tableNode));
         //更新字段解析
         for (int i = 0; i < targetColumnList.size(); i++) {
             SqlNode columnNode = targetColumnList.get(i);
             SqlNode valueNode = sourceExpressionList.get(i);
 
-            ColumnNode column = this.columnPretreatment(columnNode, valueNode, updateNode);
+            ColumnNode column = columnPretreatment(columnNode, valueNode, updateNode);
             updateNode.getColumns().add(column);
         }
         //解析where条件
-        this.parseWhereNode(null, condition, updateNode, null);
+        parseWhereNode(null, condition, updateNode, null);
         return updateNode;
     }
 
@@ -255,7 +255,7 @@ public class SQLParser {
      * @param sqlNode
      * @return
      */
-    private String getNodeStr(SqlNode sqlNode) {
+    private static String getNodeStr(SqlNode sqlNode) {
         if (sqlNode instanceof SqlCharStringLiteral) {
             SqlCharStringLiteral sqlCharStringLiteral = (SqlCharStringLiteral) sqlNode;
             return sqlCharStringLiteral.getNlsString().getValue();
@@ -271,8 +271,8 @@ public class SQLParser {
      * @param value
      * @return
      */
-    private ColumnNode columnPretreatment(SqlNode key, SqlNode value, ParseResultNode parseResultNode) {
-        ColumnNode column = this.parseColumnNode(key);
+    private static ColumnNode columnPretreatment(SqlNode key, SqlNode value, ParseResultNode parseResultNode) {
+        ColumnNode column = parseColumnNode(key);
         //预处理字段
         if (value instanceof SqlDynamicParam) {
             SqlDynamicParam sqlDynamicParam = (SqlDynamicParam) value;
@@ -289,7 +289,7 @@ public class SQLParser {
                 throw new HulkException(column.getName() + ":insert不允许字段赋值", ModuleEnum.PARSE);
             }
 
-            ColumnNode targetColumnNode = this.parseColumnNode(value);
+            ColumnNode targetColumnNode = parseColumnNode(value);
 
             if (targetColumnNode == null) {
                 throw new HulkException(column.getName() + ":该字段未赋值", ModuleEnum.PARSE);
@@ -298,7 +298,7 @@ public class SQLParser {
             column.setEvalColumn(targetColumnNode);
         }
         //解析值
-        column.setConstant(this.literalValueHandler(value));
+        column.setConstant(literalValueHandler(value));
         return column;
     }
 
@@ -308,10 +308,10 @@ public class SQLParser {
      * @param sqlSelect
      * @return
      */
-    private ParseResultNode parse(SqlSelect sqlSelect) {
+    private static ParseResultNode parse(SqlSelect sqlSelect) {
         ParseResultNode parseResultNode = new ParseResultNode();
         //字段解析
-        this.columnParse(sqlSelect.getSelectList(), parseResultNode);
+        columnParse(sqlSelect.getSelectList(), parseResultNode);
         List<ColumnNode> columns = parseResultNode.getColumns();
         if (CollUtil.isEmpty(columns)) {
             throw new HulkException("字段列表为空", ModuleEnum.PARSE);
@@ -321,20 +321,20 @@ public class SQLParser {
             throw new HulkException("字段重复", ModuleEnum.PARSE);
         }
         //表解析
-        this.fromParse(sqlSelect.getFrom(), parseResultNode);
+        fromParse(sqlSelect.getFrom(), parseResultNode);
         if (CollUtil.isEmpty(parseResultNode.getTableNodes())) {
             throw new HulkException("表列表为空", ModuleEnum.PARSE);
         }
         //where条件解析
         SqlNode where = sqlSelect.getWhere();
         if (where != null) {
-            this.parseWhereNode(null, where, parseResultNode, null);
+            parseWhereNode(null, where, parseResultNode, null);
         }
         //group by解析
         SqlNodeList group = sqlSelect.getGroup();
         if (CollUtil.isNotEmpty(group)) {
             for (SqlNode sqlNode : group) {
-                parseResultNode.getGroupBy().add(this.parseColumnNode(sqlNode));
+                parseResultNode.getGroupBy().add(parseColumnNode(sqlNode));
             }
         }
 
@@ -347,19 +347,19 @@ public class SQLParser {
      * @param sqlOrderBy
      * @return
      */
-    private ParseResultNode parse(SqlOrderBy sqlOrderBy) {
+    private static ParseResultNode parse(SqlOrderBy sqlOrderBy) {
         SqlSelect sqlSelect = (SqlSelect) sqlOrderBy.query;
-        ParseResultNode parseResultNode = this.parse(sqlSelect);
+        ParseResultNode parseResultNode = parse(sqlSelect);
         //limit解析
         SqlNode fetch = sqlOrderBy.fetch;
         SqlNode offset = sqlOrderBy.offset;
         if (fetch != null && offset != null) {
-            this.limitParse(fetch, offset, parseResultNode);
+            limitParse(fetch, offset, parseResultNode);
         }
         //排序处理
         SqlNodeList orderList = sqlOrderBy.orderList;
         if (CollUtil.isNotEmpty(orderList)) {
-            this.orderParse(orderList, parseResultNode);
+            orderParse(orderList, parseResultNode);
         }
 
         return parseResultNode;
@@ -373,9 +373,9 @@ public class SQLParser {
      * @param parseResultNode
      * @return
      */
-    private void columnParse(SqlNodeList selectList, ParseResultNode parseResultNode) {
+    private static void columnParse(SqlNodeList selectList, ParseResultNode parseResultNode) {
         for (SqlNode sqlNode : selectList) {
-            ColumnNode columnNode = this.parseColumnNode(sqlNode);
+            ColumnNode columnNode = parseColumnNode(sqlNode);
             if (columnNode != null) {
                 parseResultNode.getColumns().add(columnNode);
             }
@@ -389,7 +389,7 @@ public class SQLParser {
      * @param offsetNode
      * @param parseResultNode
      */
-    private void limitParse(SqlNode fetchNode, SqlNode offsetNode, ParseResultNode parseResultNode) {
+    private static void limitParse(SqlNode fetchNode, SqlNode offsetNode, ParseResultNode parseResultNode) {
         if (fetchNode != null && offsetNode != null) {
             SqlNumericLiteral fetch = (SqlNumericLiteral) fetchNode;
             SqlNumericLiteral offset = (SqlNumericLiteral) offsetNode;
@@ -405,11 +405,11 @@ public class SQLParser {
      * @param orderList
      * @param parseResultNode
      */
-    private void orderParse(SqlNodeList orderList, ParseResultNode parseResultNode) {
+    private static void orderParse(SqlNodeList orderList, ParseResultNode parseResultNode) {
         for (SqlNode sqlNode : orderList) {
             OrderNode order = new OrderNode();
 
-            ColumnNode columnNode = this.parseColumnNode(sqlNode);
+            ColumnNode columnNode = parseColumnNode(sqlNode);
             order.setColumnNode(columnNode);
 
             if (sqlNode instanceof SqlBasicCall) {
@@ -428,19 +428,19 @@ public class SQLParser {
      * @param from
      * @param parseResultNode
      */
-    private void fromParse(SqlNode from, ParseResultNode parseResultNode) {
+    private static void fromParse(SqlNode from, ParseResultNode parseResultNode) {
         if (from instanceof SqlJoin) {
             SqlJoin sqlJoin = (SqlJoin) from;
 
             SqlNode left = sqlJoin.getLeft();
             if (left instanceof SqlJoin) {
-                this.fromParse(left, parseResultNode);
+                fromParse(left, parseResultNode);
             } else {
-                TableNode leftTable = this.parseTableNode(left);
+                TableNode leftTable = parseTableNode(left);
                 parseResultNode.getTableNodes().add(leftTable);
             }
 
-            TableNode tableNode = this.parseTableNode(sqlJoin.getRight());
+            TableNode tableNode = parseTableNode(sqlJoin.getRight());
             parseResultNode.getTableNodes().add(tableNode);
 
             SqlNode condition = ((SqlJoin) from).getCondition();
@@ -450,8 +450,8 @@ public class SQLParser {
 
             RelationNode relationNode = new RelationNode();
             relationNode.setTargetTable(tableNode);
-            relationNode.setJoinType(this.joinTypeMapper(sqlJoin.getJoinType()));
-            this.parseRelationNode(relationNode, null, condition, parseResultNode, null);
+            relationNode.setJoinType(joinTypeMapper(sqlJoin.getJoinType()));
+            parseRelationNode(relationNode, null, condition, parseResultNode, null);
             parseResultNode.getRelationNodes().add(relationNode);
             //判断条件是否只包含主表或子表
             List<ConditionGroupNode> relConditionNodes = relationNode.getRelConditionNodes();
@@ -462,7 +462,7 @@ public class SQLParser {
         }
 
         if (from instanceof SqlBasicCall || from instanceof SqlIdentifier) {
-            parseResultNode.getTableNodes().add(this.parseTableNode(from));
+            parseResultNode.getTableNodes().add(parseTableNode(from));
         }
     }
 
@@ -472,7 +472,7 @@ public class SQLParser {
      * @param sqlNode
      * @return
      */
-    private void parseRelationNode(RelationNode relationNode, SqlKind upper, SqlNode sqlNode, ParseResultNode parseResultNode, ConditionGroupNode conditionGroupNode) {
+    private static void parseRelationNode(RelationNode relationNode, SqlKind upper, SqlNode sqlNode, ParseResultNode parseResultNode, ConditionGroupNode conditionGroupNode) {
         if (sqlNode instanceof SqlBasicCall) {
             SqlBasicCall sqlBasicCall = (SqlBasicCall) sqlNode;
 
@@ -485,11 +485,11 @@ public class SQLParser {
                     SqlKind childKind = operand.getKind();
                     if (childKind.equals(SqlKind.OR) || childKind.equals(SqlKind.AND)) {
                         ConditionGroupNode another = new ConditionGroupNode();
-                        another.setConditionType(this.conditionTypeMapper(kind));
+                        another.setConditionType(conditionTypeMapper(kind));
                         relationNode.getRelConditionNodes().add(another);
-                        this.parseRelationNode(relationNode, childKind, operand, parseResultNode, another);
+                        parseRelationNode(relationNode, childKind, operand, parseResultNode, another);
                     } else {
-                        this.parseRelationNode(relationNode, upper == null ? kind : upper, operand, parseResultNode, conditionGroupNode);
+                        parseRelationNode(relationNode, upper == null ? kind : upper, operand, parseResultNode, conditionGroupNode);
                     }
                 }
 
@@ -498,12 +498,12 @@ public class SQLParser {
             //条件组为空则创建(单一条件触发)
             if (conditionGroupNode == null) {
                 conditionGroupNode = new ConditionGroupNode();
-                conditionGroupNode.setConditionType(this.conditionTypeMapper(upper));
+                conditionGroupNode.setConditionType(conditionTypeMapper(upper));
                 relationNode.getRelConditionNodes().add(conditionGroupNode);
             }
             //解析具体条件
-            ConditionNode conditionNode = this.parseConditionNode(sqlBasicCall, parseResultNode);
-            conditionNode.setConditionType(this.conditionTypeMapper(upper));
+            ConditionNode conditionNode = parseConditionNode(sqlBasicCall, parseResultNode);
+            conditionNode.setConditionType(conditionTypeMapper(upper));
             conditionGroupNode.getConditionNodeList().add(conditionNode);
         }
     }
@@ -514,7 +514,7 @@ public class SQLParser {
      * @param sqlKind
      * @return
      */
-    private ConditionTypeEnum conditionTypeMapper(SqlKind sqlKind) {
+    private static ConditionTypeEnum conditionTypeMapper(SqlKind sqlKind) {
         if (sqlKind == null) {
             return ConditionTypeEnum.AND;
         }
@@ -528,7 +528,7 @@ public class SQLParser {
      * @param sqlNode
      * @return
      */
-    private void parseWhereNode(SqlKind upper, SqlNode sqlNode, ParseResultNode parseResultNode, ConditionGroupNode conditionGroupNode) {
+    private static void parseWhereNode(SqlKind upper, SqlNode sqlNode, ParseResultNode parseResultNode, ConditionGroupNode conditionGroupNode) {
         if (sqlNode instanceof SqlBasicCall) {
             SqlBasicCall sqlBasicCall = (SqlBasicCall) sqlNode;
 
@@ -541,11 +541,11 @@ public class SQLParser {
                     SqlKind childKind = operand.getKind();
                     if (childKind.equals(SqlKind.OR) || childKind.equals(SqlKind.AND)) {
                         ConditionGroupNode another = new ConditionGroupNode();
-                        another.setConditionType(this.conditionTypeMapper(kind));
+                        another.setConditionType(conditionTypeMapper(kind));
                         parseResultNode.getWhereConditionNodes().add(another);
-                        this.parseWhereNode(childKind, operand, parseResultNode, another);
+                        parseWhereNode(childKind, operand, parseResultNode, another);
                     } else {
-                        this.parseWhereNode(upper == null ? kind : upper, operand, parseResultNode, conditionGroupNode);
+                        parseWhereNode(upper == null ? kind : upper, operand, parseResultNode, conditionGroupNode);
                     }
                 }
 
@@ -554,12 +554,12 @@ public class SQLParser {
             //条件组为空则创建(单一条件触发)
             if (conditionGroupNode == null) {
                 conditionGroupNode = new ConditionGroupNode();
-                conditionGroupNode.setConditionType(this.conditionTypeMapper(upper));
+                conditionGroupNode.setConditionType(conditionTypeMapper(upper));
                 parseResultNode.getWhereConditionNodes().add(conditionGroupNode);
             }
             //解析具体条件
-            ConditionNode conditionNode = this.parseConditionNode(sqlBasicCall, parseResultNode);
-            conditionNode.setConditionType(this.conditionTypeMapper(upper));
+            ConditionNode conditionNode = parseConditionNode(sqlBasicCall, parseResultNode);
+            conditionNode.setConditionType(conditionTypeMapper(upper));
             conditionGroupNode.getConditionNodeList().add(conditionNode);
         }
     }
@@ -570,19 +570,19 @@ public class SQLParser {
      * @param sqlBasicCall
      * @param parseResultNode
      */
-    private ConditionNode parseConditionNode(SqlBasicCall sqlBasicCall, ParseResultNode parseResultNode) {
+    private static ConditionNode parseConditionNode(SqlBasicCall sqlBasicCall, ParseResultNode parseResultNode) {
         SqlNode[] operands = sqlBasicCall.operands;
         SqlOperator operator = sqlBasicCall.getOperator();
         SqlKind kind = operator.kind;
 
-        ColumnNode columnNode = this.parseColumnNode(operands[0]);
+        ColumnNode columnNode = parseColumnNode(operands[0]);
 
         ConditionNode conditionNode = new ConditionNode();
         conditionNode.setColumn(columnNode);
-        this.matchTable(columnNode, parseResultNode.getTableNodes());
+        matchTable(columnNode, parseResultNode.getTableNodes());
         switch (kind) {
             case NOT_EQUALS:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 conditionNode.setCondition(ConditionEnum.NE);
                 //目标值为空纠正条件
                 if (conditionNode.getValue() == null) {
@@ -591,20 +591,20 @@ public class SQLParser {
 
                 break;
             case LIKE:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 String name = sqlBasicCall.getOperator().getName();
                 conditionNode.setCondition(name.trim().equalsIgnoreCase("NOT LIKE") ? ConditionEnum.NOT_LIKE : ConditionEnum.LIKE);
                 break;
             case IN:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 conditionNode.setCondition(ConditionEnum.IN);
                 break;
             case NOT_IN:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 conditionNode.setCondition(ConditionEnum.NOT_IN);
                 break;
             case EQUALS:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 conditionNode.setCondition(ConditionEnum.EQ);
                 //目标值为空纠正条件
                 if (conditionNode.getValue() == null && conditionNode.getTargetColumn() == null) {
@@ -613,19 +613,19 @@ public class SQLParser {
 
                 break;
             case GREATER_THAN_OR_EQUAL:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 conditionNode.setCondition(ConditionEnum.GE);
                 break;
             case GREATER_THAN:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 conditionNode.setCondition(ConditionEnum.GT);
                 break;
             case LESS_THAN_OR_EQUAL:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 conditionNode.setCondition(ConditionEnum.LE);
                 break;
             case LESS_THAN:
-                this.valueHandler(operands[1], conditionNode, parseResultNode);
+                valueHandler(operands[1], conditionNode, parseResultNode);
                 conditionNode.setCondition(ConditionEnum.LT);
                 break;
             case IS_NULL:
@@ -640,8 +640,8 @@ public class SQLParser {
         //调整顺序
         ColumnNode targetColumn = conditionNode.getTargetColumn();
         if (targetColumn != null) {
-            int sourceIndex = this.getIndex(parseResultNode, columnNode);
-            int targetIndex = this.getIndex(parseResultNode, targetColumn);
+            int sourceIndex = getIndex(parseResultNode, columnNode);
+            int targetIndex = getIndex(parseResultNode, targetColumn);
             //调整条件顺序
             if (targetIndex > sourceIndex) {
                 ConditionNode another = new ConditionNode();
@@ -663,10 +663,10 @@ public class SQLParser {
      * @param columnNode
      * @return
      */
-    private int getIndex(ParseResultNode parseResultNode, ColumnNode columnNode) {
+    private static int getIndex(ParseResultNode parseResultNode, ColumnNode columnNode) {
         List<TableNode> tableNodes = parseResultNode.getTableNodes();
         for (int i = 0; i < tableNodes.size(); i++) {
-            if (this.matchTableColumns(tableNodes.get(i), columnNode)) {
+            if (matchTableColumns(tableNodes.get(i), columnNode)) {
                 return i;
             }
         }
@@ -679,7 +679,7 @@ public class SQLParser {
      *
      * @param sqlNode
      */
-    private TableNode parseTableNode(SqlNode sqlNode) {
+    private static TableNode parseTableNode(SqlNode sqlNode) {
         if (sqlNode instanceof SqlBasicCall) {
             SqlBasicCall sqlBasicCall = (SqlBasicCall) sqlNode;
             //别名
@@ -745,7 +745,7 @@ public class SQLParser {
      * @param joinType
      * @return
      */
-    private JoinTypeEnum joinTypeMapper(JoinType joinType) {
+    private static JoinTypeEnum joinTypeMapper(JoinType joinType) {
         if (joinType == null) {
             return null;
         }
@@ -766,14 +766,14 @@ public class SQLParser {
      * @param sqlNode
      * @return
      */
-    private void valueHandler(SqlNode sqlNode, ConditionNode conditionNode, ParseResultNode parseResultNode) {
+    private static void valueHandler(SqlNode sqlNode, ConditionNode conditionNode, ParseResultNode parseResultNode) {
         List<TableNode> tableNodes = parseResultNode.getTableNodes();
         //表字段条件
         if (sqlNode instanceof SqlIdentifier) {
-            ColumnNode columnNode = this.parseColumnNode(sqlNode);
+            ColumnNode columnNode = parseColumnNode(sqlNode);
             conditionNode.setTargetColumn(columnNode);
-            this.matchTable(conditionNode.getColumn(), tableNodes);
-            this.matchTable(columnNode, tableNodes);
+            matchTable(conditionNode.getColumn(), tableNodes);
+            matchTable(columnNode, tableNodes);
             return;
         }
         //动态字段解析
@@ -788,7 +788,7 @@ public class SQLParser {
         }
         //值条件
         if (sqlNode instanceof SqlLiteral) {
-            conditionNode.setValue(this.literalValueHandler(sqlNode));
+            conditionNode.setValue(literalValueHandler(sqlNode));
             return;
         }
         //in
@@ -797,7 +797,7 @@ public class SQLParser {
 
             List<Object> list = Lists.newArrayList();
             for (SqlNode node : sqlNodeList) {
-                list.add(this.literalValueHandler(node));
+                list.add(literalValueHandler(node));
             }
 
             conditionNode.setValue(list);
@@ -813,7 +813,7 @@ public class SQLParser {
      * @param sqlNode
      * @return
      */
-    private Object literalValueHandler(SqlNode sqlNode) {
+    private static Object literalValueHandler(SqlNode sqlNode) {
         //值条件
         if (sqlNode instanceof SqlLiteral) {
             if (sqlNode instanceof SqlNumericLiteral) {
@@ -861,7 +861,7 @@ public class SQLParser {
      * @param sqlNode
      * @return
      */
-    private ColumnNode parseColumnNode(SqlNode sqlNode) {
+    private static ColumnNode parseColumnNode(SqlNode sqlNode) {
         //select * 判断
         if ("*".equalsIgnoreCase(sqlNode.toString())) {
             ColumnNode columnNode = new ColumnNode();
@@ -872,7 +872,7 @@ public class SQLParser {
         if (sqlNode instanceof SqlLiteral) {
             ColumnNode columnNode = new ColumnNode();
 
-            Object o = this.literalValueHandler(sqlNode);
+            Object o = literalValueHandler(sqlNode);
 
             columnNode.setConstant(o);
             columnNode.setName(o.toString());
@@ -916,7 +916,7 @@ public class SQLParser {
                 columnNode.setType(ColumnTypeEnum.EXPRESSION);
 
                 for (SqlNode operand : sqlBasicCall.operands) {
-                    ColumnNode paramNode = this.parseColumnNode(operand);
+                    ColumnNode paramNode = parseColumnNode(operand);
                     if (paramNode.getType().equals(ColumnTypeEnum.FIELD)) {
                         columnNode.getFunctionParam().add(paramNode);
                     }
@@ -931,10 +931,10 @@ public class SQLParser {
                 ColumnNode columnNode = new ColumnNode();
 
                 SqlKind kind = sqlAggFunction.kind;
-                columnNode.setAggregateEnum(this.aggregateMapper(kind));
+                columnNode.setAggregateEnum(aggregateMapper(kind));
                 if (!columnNode.getAggregateEnum().equals(AggregateEnum.COUNT)) {
                     for (SqlNode operand : sqlBasicCall.operands) {
-                        columnNode.getFunctionParam().add(this.parseColumnNode(operand));
+                        columnNode.getFunctionParam().add(parseColumnNode(operand));
                     }
 
                     long count = columnNode.getFunctionParam().stream().filter(bean -> bean.getType().equals(ColumnTypeEnum.FIELD)).count();
@@ -958,7 +958,7 @@ public class SQLParser {
                     columnNode.setFunctionExp(ArrayUtil.join(sqlBasicCall.operands, ","));
 
                     for (SqlNode operand : sqlBasicCall.operands) {
-                        columnNode.getFunctionParam().add(this.parseColumnNode(operand));
+                        columnNode.getFunctionParam().add(parseColumnNode(operand));
                     }
                 }
 
@@ -974,7 +974,7 @@ public class SQLParser {
             //排序字段
             if (operator instanceof SqlPostfixOperator) {
                 if (sqlBasicCall.operands.length == 1) {
-                    return this.parseColumnNode(sqlBasicCall.operands[0]);
+                    return parseColumnNode(sqlBasicCall.operands[0]);
                 }
             }
             //别名
@@ -982,7 +982,7 @@ public class SQLParser {
                 if (sqlBasicCall.operands.length == 2) {
                     SqlNode operandOne = sqlBasicCall.operands[0];
 
-                    ColumnNode columnNode = this.parseColumnNode(operandOne);
+                    ColumnNode columnNode = parseColumnNode(operandOne);
 
                     SqlNode operandTwo = sqlBasicCall.operands[1];
                     if (operandTwo instanceof SqlIdentifier) {
@@ -1005,7 +1005,7 @@ public class SQLParser {
      * @param kind
      * @return
      */
-    private AggregateEnum aggregateMapper(SqlKind kind) {
+    private static AggregateEnum aggregateMapper(SqlKind kind) {
         switch (kind) {
             case COUNT:
                 return AggregateEnum.COUNT;
@@ -1028,7 +1028,7 @@ public class SQLParser {
      * @param columnNode
      * @return
      */
-    private void matchTable(ColumnNode columnNode, List<TableNode> tableNodes) {
+    private static void matchTable(ColumnNode columnNode, List<TableNode> tableNodes) {
         String subjection = columnNode.getSubjection();
 
         if (tableNodes.size() == 1) {
@@ -1056,7 +1056,7 @@ public class SQLParser {
      * @param columnNode
      * @return
      */
-    private boolean matchTableColumns(TableNode tableNode, ColumnNode columnNode) {
+    private static boolean matchTableColumns(TableNode tableNode, ColumnNode columnNode) {
         return columnNode.getSubjection().equalsIgnoreCase(tableNode.getAlias()) || columnNode.getSubjection().equalsIgnoreCase(tableNode.getTableName());
     }
 }

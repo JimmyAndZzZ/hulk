@@ -4,18 +4,14 @@ import cn.hutool.core.collection.CollUtil;
 import com.jimmy.hulk.common.enums.ConditionEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.utils.ConditionUtil;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.ConditionParse;
 import com.jimmy.hulk.data.core.Condition;
+import com.jimmy.hulk.data.utils.ConditionUtil;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.NEO4J;
-
-@DS(type = NEO4J)
 public class Neo4jConditionParse implements ConditionParse<String> {
 
     @Override

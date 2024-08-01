@@ -2,7 +2,6 @@ package com.jimmy.hulk.data.field;
 
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.FieldMapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +10,6 @@ import static com.jimmy.hulk.common.enums.DatasourceEnum.ORACLE;
 
 @Getter
 @AllArgsConstructor
-@DS(type = ORACLE)
 public enum OracleMapper implements FieldMapper {
 
     VARCHAR(FieldTypeEnum.VARCHAR, "VARCHAR2", null, true),

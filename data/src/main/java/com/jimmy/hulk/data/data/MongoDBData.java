@@ -10,8 +10,6 @@ import com.jimmy.hulk.common.enums.ConditionEnum;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.MongoDBCondition;
 import com.jimmy.hulk.data.core.*;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
@@ -26,10 +24,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.MONGODB;
-
 @Slf4j
-@DS(type = MONGODB, condition = MongoDBCondition.class)
 public class MongoDBData extends BaseData {
 
     private MongoCollection<Document> document;

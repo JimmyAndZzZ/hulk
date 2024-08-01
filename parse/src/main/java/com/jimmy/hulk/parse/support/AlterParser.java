@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AlterParser {
 
-    public TableNode tableParse(String sql) {
+    public static TableNode tableParse(String sql) {
         sql = StrUtil.trim(sql);
 
         try {
@@ -105,7 +105,7 @@ public class AlterParser {
         }
     }
 
-    public List<AlterNode> alterParse(String sql) {
+    public static List<AlterNode> alterParse(String sql) {
         List<AlterNode> alters = Lists.newArrayList();
 
         try {
@@ -125,11 +125,11 @@ public class AlterParser {
                                 AlterNode alterNode = new AlterNode();
                                 alterNode.setTable(name);
                                 alterNode.setAlterTypeEnum(AlterTypeEnum.ADD_COLUMN);
-                                alterNode.setColumnNode(this.handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
+                                alterNode.setColumnNode(handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
                                 alters.add(alterNode);
                             }
 
-                            IndexNode indexNode = this.handlerIndex(alterExpression);
+                            IndexNode indexNode = handlerIndex(alterExpression);
                             if (indexNode != null) {
                                 AlterNode alterNode = new AlterNode();
                                 alterNode.setTable(name);
@@ -144,7 +144,7 @@ public class AlterParser {
                                 AlterNode alterNode = new AlterNode();
                                 alterNode.setTable(name);
                                 alterNode.setAlterTypeEnum(AlterTypeEnum.MODIFY_COLUMN);
-                                alterNode.setColumnNode(this.handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
+                                alterNode.setColumnNode(handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
                                 alters.add(alterNode);
                             }
 
@@ -158,7 +158,7 @@ public class AlterParser {
                                 alterNode.setTable(name);
                                 alterNode.setOldColumnNode(oldColumnNode);
                                 alterNode.setAlterTypeEnum(AlterTypeEnum.CHANGE_COLUMN);
-                                alterNode.setColumnNode(this.handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
+                                alterNode.setColumnNode(handlerColumn(alterExpression.getColDataTypeList().stream().findFirst().get()));
                                 alters.add(alterNode);
                             }
 
@@ -175,7 +175,7 @@ public class AlterParser {
                                 alters.add(alterNode);
                             }
 
-                            IndexNode dropIndexNode = this.handlerIndex(alterExpression);
+                            IndexNode dropIndexNode = handlerIndex(alterExpression);
                             if (dropIndexNode != null) {
                                 AlterNode alterNode = new AlterNode();
                                 alterNode.setTable(name);
@@ -204,7 +204,7 @@ public class AlterParser {
      * @param columnDataType
      * @return
      */
-    private ColumnNode handlerColumn(AlterExpression.ColumnDataType columnDataType) {
+    private static ColumnNode handlerColumn(AlterExpression.ColumnDataType columnDataType) {
         String columnName = columnDataType.getColumnName();
         ColDataType colDataType = columnDataType.getColDataType();
         List<String> argumentsStringList = colDataType.getArgumentsStringList();
@@ -232,7 +232,7 @@ public class AlterParser {
      * @param alterExpression
      * @return
      */
-    private IndexNode handlerIndex(AlterExpression alterExpression) {
+    private static IndexNode handlerIndex(AlterExpression alterExpression) {
         String ukName = alterExpression.getUkName();
         Index index = alterExpression.getIndex();
 

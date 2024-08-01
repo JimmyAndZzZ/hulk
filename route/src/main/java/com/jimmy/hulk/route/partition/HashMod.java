@@ -9,9 +9,4 @@ public class HashMod implements Mod<Object> {
         int ss = columnValue.hashCode() & Integer.MAX_VALUE;
         return ss % threshold;
     }
-
-    @Override
-    public String name() {
-        return "hash-mod";
-    }
 }

@@ -3,17 +3,14 @@ package com.jimmy.hulk.data.datasource;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Maps;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.MySQLActuator;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.MySQLCondition;
 import com.jimmy.hulk.data.core.Dump;
 import com.jimmy.hulk.data.notify.ImportNotify;
-import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
@@ -25,25 +22,20 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.MYSQL;
-
 @Slf4j
-@Conditional(MySQLCondition.class)
-@DS(type = MYSQL, condition = MySQLCondition.class)
 public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
 
-    private static ConcurrentMap<String, HikariDataSource> dsCache = Maps.newConcurrentMap();
+    private static final ConcurrentMap<String, HikariDataSource> DS_CACHE = Maps.newConcurrentMap();
 
     @Override
     public void close() throws IOException {
         String name = dataSourceProperty.getName();
-        HikariDataSource hikariDataSource = dsCache.get(name);
+        HikariDataSource hikariDataSource = DS_CACHE.get(name);
         if (hikariDataSource != null) {
-            dsCache.remove(name);
+            DS_CACHE.remove(name);
             hikariDataSource.close();
         }
     }
@@ -61,13 +53,13 @@ public class MySQLDatasource extends BaseDatasource<javax.sql.DataSource> {
     @Override
     public javax.sql.DataSource getDataSource(Long timeout) {
         String name = dataSourceProperty.getName();
-        HikariDataSource dataSource = dsCache.get(name);
+        HikariDataSource dataSource = DS_CACHE.get(name);
         if (dataSource != null) {
             return dataSource;
         }
 
         dataSource = (HikariDataSource) this.getDataSourceWithoutCache(timeout);
-        HikariDataSource put = dsCache.putIfAbsent(name, dataSource);
+        HikariDataSource put = DS_CACHE.putIfAbsent(name, dataSource);
         if (put != null) {
             dataSource.close();
             return put;

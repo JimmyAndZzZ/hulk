@@ -6,8 +6,6 @@ import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.Neo4jCondition;
 import com.jimmy.hulk.data.core.*;
 import com.jimmy.hulk.data.transaction.TransactionManager;
 import com.jimmy.hulk.data.utils.ConditionUtil;
@@ -21,10 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.NEO4J;
-
 @Slf4j
-@DS(type = NEO4J, condition = Neo4jCondition.class)
 public class Neo4jData extends BaseData {
 
     private static final String INSERT_SQL_FORMAT = "CREATE (n:{} {{}});";

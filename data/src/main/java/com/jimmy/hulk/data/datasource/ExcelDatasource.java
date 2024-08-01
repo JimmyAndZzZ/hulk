@@ -6,23 +6,13 @@ import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.ExcelActuator;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.ExcelCondition;
-import com.jimmy.hulk.data.config.DataProperties;
 import com.jimmy.hulk.data.core.Dump;
-import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 
 import static com.jimmy.hulk.common.enums.DatasourceEnum.EXCEL;
 
-@Conditional(ExcelCondition.class)
-@DS(type = EXCEL, condition = ExcelCondition.class)
 public class ExcelDatasource extends BaseDatasource<String> {
-
-    @Override
-    public void init(DataProperties dataProperties) {
-    }
 
     @Override
     public Actuator getActuator() {

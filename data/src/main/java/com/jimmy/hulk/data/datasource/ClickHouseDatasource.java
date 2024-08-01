@@ -2,12 +2,10 @@ package com.jimmy.hulk.data.datasource;
 
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Maps;
-import com.jimmy.hulk.data.actuator.Actuator;
-import com.jimmy.hulk.data.condition.ClickHouseCondition;
-import com.jimmy.hulk.data.actuator.ClickHouseActuator;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.core.Dump;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
+import com.jimmy.hulk.data.actuator.Actuator;
+import com.jimmy.hulk.data.actuator.ClickHouseActuator;
+import com.jimmy.hulk.data.core.Dump;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.clickhouse.ClickHouseDataSource;
@@ -19,17 +17,16 @@ import java.util.Map;
 import static com.jimmy.hulk.common.enums.DatasourceEnum.CLICK_HOUSE;
 
 @Slf4j
-@DS(type = CLICK_HOUSE, condition = ClickHouseCondition.class)
 public class ClickHouseDatasource extends BaseDatasource<javax.sql.DataSource> {
 
-    private static Map<String, ru.yandex.clickhouse.ClickHouseDataSource> dsCache = Maps.newConcurrentMap();
+    private static final Map<String, ru.yandex.clickhouse.ClickHouseDataSource> DS_CACHE = Maps.newConcurrentMap();
 
     @Override
     public void close() throws IOException {
         String name = dataSourceProperty.getName();
-        ClickHouseDataSource clickHouseDataSource = dsCache.get(name);
+        ClickHouseDataSource clickHouseDataSource = DS_CACHE.get(name);
         if (clickHouseDataSource != null) {
-            dsCache.remove(name);
+            DS_CACHE.remove(name);
         }
     }
 
@@ -41,13 +38,13 @@ public class ClickHouseDatasource extends BaseDatasource<javax.sql.DataSource> {
     @Override
     public javax.sql.DataSource getDataSource() {
         String name = dataSourceProperty.getName();
-        ru.yandex.clickhouse.ClickHouseDataSource dataSource = dsCache.get(name);
+        ru.yandex.clickhouse.ClickHouseDataSource dataSource = DS_CACHE.get(name);
         if (dataSource != null) {
             return dataSource;
         }
 
         dataSource = (ru.yandex.clickhouse.ClickHouseDataSource) this.getDataSourceWithoutCache(null);
-        ClickHouseDataSource put = dsCache.putIfAbsent(name, dataSource);
+        ClickHouseDataSource put = DS_CACHE.putIfAbsent(name, dataSource);
         if (put != null) {
             dataSource = null;
             return put;

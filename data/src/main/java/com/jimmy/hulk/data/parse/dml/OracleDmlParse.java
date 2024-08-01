@@ -1,14 +1,10 @@
 package com.jimmy.hulk.data.parse.dml;
 
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.DmlParse;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.ORACLE;
-
-@DS(type = ORACLE)
 public class OracleDmlParse implements DmlParse {
 
     @Override

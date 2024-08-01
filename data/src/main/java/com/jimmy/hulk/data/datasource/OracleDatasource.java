@@ -10,14 +10,11 @@ import com.google.common.collect.Sets;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.OracleActuator;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.OracleCondition;
 import com.jimmy.hulk.data.core.Dump;
 import com.jimmy.hulk.data.notify.ImportNotify;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
@@ -38,18 +35,16 @@ import java.util.regex.Pattern;
 import static com.jimmy.hulk.common.enums.DatasourceEnum.ORACLE;
 
 @Slf4j
-@Conditional(OracleCondition.class)
-@DS(type = ORACLE, condition = OracleCondition.class)
 public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
 
-    private static Map<String, HikariDataSource> dsCache = Maps.newConcurrentMap();
+    private final static Map<String, HikariDataSource> DS_CACHE = Maps.newConcurrentMap();
 
     @Override
     public void close() throws IOException {
         String name = dataSourceProperty.getName();
-        HikariDataSource dataSource = dsCache.get(name);
+        HikariDataSource dataSource = DS_CACHE.get(name);
         if (dataSource != null) {
-            dsCache.remove(name);
+            DS_CACHE.remove(name);
             dataSource.close();
         }
     }
@@ -67,13 +62,13 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
     @Override
     public javax.sql.DataSource getDataSource(Long timeout) {
         String name = dataSourceProperty.getName();
-        HikariDataSource dataSource = dsCache.get(name);
+        HikariDataSource dataSource = DS_CACHE.get(name);
         if (dataSource != null) {
             return dataSource;
         }
 
         dataSource = (HikariDataSource) this.getDataSourceWithoutCache(timeout);
-        HikariDataSource put = dsCache.putIfAbsent(name, dataSource);
+        HikariDataSource put = DS_CACHE.putIfAbsent(name, dataSource);
         if (put != null) {
             dataSource.close();
             return put;

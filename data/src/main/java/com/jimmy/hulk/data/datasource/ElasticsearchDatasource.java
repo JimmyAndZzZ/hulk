@@ -1,23 +1,18 @@
 package com.jimmy.hulk.data.datasource;
 
-import com.jimmy.hulk.data.condition.ElasticsearchCondition;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.ElasticsearchActuator;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.core.Dump;
-import com.jimmy.hulk.common.enums.DatasourceEnum;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 
 import static com.jimmy.hulk.common.enums.DatasourceEnum.ELASTICSEARCH;
 
-@Conditional(ElasticsearchCondition.class)
-@DS(type = ELASTICSEARCH, condition = ElasticsearchCondition.class)
 public class ElasticsearchDatasource extends BaseDatasource<RestHighLevelClient> {
 
     @Override

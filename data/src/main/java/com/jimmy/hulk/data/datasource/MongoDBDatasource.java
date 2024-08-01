@@ -7,8 +7,6 @@ import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.MongoDBActuator;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.MongoDBCondition;
 import com.jimmy.hulk.data.core.Dump;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCredential;
@@ -17,7 +15,6 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -28,11 +25,9 @@ import static com.jimmy.hulk.common.enums.DatasourceEnum.MONGODB;
 import static java.util.Arrays.asList;
 
 @Slf4j
-@Conditional(MongoDBCondition.class)
-@DS(type = MONGODB, condition = MongoDBCondition.class)
 public class MongoDBDatasource extends BaseDatasource<MongoClient> {
 
-    private static ConcurrentMap<String, MongoClient> dsCache = Maps.newConcurrentMap();
+    private static final ConcurrentMap<String, MongoClient> DS_CACHE = Maps.newConcurrentMap();
 
     @Override
     public DatasourceEnum type() {
@@ -52,13 +47,13 @@ public class MongoDBDatasource extends BaseDatasource<MongoClient> {
     @Override
     public MongoClient getDataSource(Long timeout) {
         String name = dataSourceProperty.getName();
-        MongoClient mongoClient = dsCache.get(name);
+        MongoClient mongoClient = DS_CACHE.get(name);
         if (mongoClient != null) {
             return mongoClient;
         }
 
         mongoClient = this.getDataSourceWithoutCache(timeout);
-        MongoClient put = dsCache.putIfAbsent(name, mongoClient);
+        MongoClient put = DS_CACHE.putIfAbsent(name, mongoClient);
         if (put != null) {
             put.close();
             return put;

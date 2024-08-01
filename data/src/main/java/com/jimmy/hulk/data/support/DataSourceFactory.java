@@ -1,118 +1,107 @@
 package com.jimmy.hulk.data.support;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.ClassLoaderUtil;
-import cn.hutool.core.util.ReflectUtil;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.ConnectionType;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.*;
-import com.jimmy.hulk.data.condition.ConditionContextImpl;
 import com.jimmy.hulk.data.config.DataSourceProperty;
-import com.jimmy.hulk.data.data.BaseData;
-import com.jimmy.hulk.data.data.TransactionData;
-import com.jimmy.hulk.data.datasource.BaseDatasource;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.context.annotation.Condition;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.core.type.classreading.MetadataReader;
-import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.MultiValueMap;
+import com.jimmy.hulk.data.connection.DbConnection;
+import com.jimmy.hulk.data.connection.ExcelConnection;
+import com.jimmy.hulk.data.connection.Neo4jConnection;
+import com.jimmy.hulk.data.data.*;
+import com.jimmy.hulk.data.datasource.*;
+import com.jimmy.hulk.data.field.*;
+import com.jimmy.hulk.data.parse.condition.*;
+import com.jimmy.hulk.data.parse.dml.ClickHouseDmlParse;
+import com.jimmy.hulk.data.parse.dml.MySQLDmlParse;
+import com.jimmy.hulk.data.parse.dml.OracleDmlParse;
+import com.jimmy.hulk.data.parse.dml.SqlServerDmlParse;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.Map;
 
 /**
  * 数据源工厂
  */
 public class DataSourceFactory {
 
-    private Map<DatasourceEnum, DmlParse> dmlParseCache = Maps.newHashMap();
+    private final Map<DatasourceEnum, DmlParse> dmlParseCache = Maps.newHashMap();
 
-    private Map<DatasourceEnum, ConditionParse> conditionParseCache = Maps.newHashMap();
+    private final Map<DatasourceEnum, ConditionParse> conditionParseCache = Maps.newHashMap();
 
-    private Map<DatasourceEnum, Class<? extends BaseData>> dataMap = Maps.newHashMap();
+    private final Map<DatasourceEnum, Class<? extends BaseData>> dataMap = Maps.newHashMap();
 
-    private Map<DatasourceEnum, Class<? extends DmlParse>> dmlParseMap = Maps.newHashMap();
+    private final Map<DatasourceEnum, Class<? extends FieldMapper>> fieldMapperMap = Maps.newHashMap();
 
-    private Map<DatasourceEnum, Class<? extends FieldMapper>> fieldMapperMap = Maps.newHashMap();
+    private final Map<DatasourceEnum, Class<? extends BaseDatasource>> dataSourceMap = Maps.newHashMap();
 
-    private Map<DatasourceEnum, Class<? extends BaseDatasource>> dataSourceMap = Maps.newHashMap();
+    private final Map<DatasourceEnum, Class<? extends Connection>> connectionClassMap = Maps.newHashMap();
 
-    private Map<DatasourceEnum, Class<? extends Connection>> connectionClassMap = Maps.newHashMap();
+    private static class SingletonHolder {
 
-    private Map<DatasourceEnum, Class<? extends ConditionParse>> conditionParseMap = Maps.newHashMap();
-
-    @Autowired
-    private DefaultListableBeanFactory beanFactory;
-
-    @Autowired
-    private MetadataReaderFactory metadataReaderFactory;
-
-    public void init() throws Exception {
-        //数据源扫描
-        scan(Constants.Data.SCAN_PATH_DATASOURCE, dataSourceMap, BaseDatasource.class);
-        //数据操作类扫描
-        scan(Constants.Data.SCAN_PATH_DATA, dataMap, BaseData.class);
-        //数据操作类扫描
-        scan(Constants.Data.SCAN_PATH_DATA, dataMap, TransactionData.class);
-        //映射类扫描
-        scan(Constants.Data.SCAN_PATH_FIELD, fieldMapperMap, FieldMapper.class);
-        //条件解析类扫描
-        scan(Constants.Data.SCAN_PATH_CONDITION_PARSE, conditionParseMap, ConditionParse.class);
-        //DML解析类扫描
-        scan(Constants.Data.SCAN_PATH_DML_PARSE, dmlParseMap, DmlParse.class);
-        //连接类扫描
-        scan();
+        private static final DataSourceFactory INSTANCE = new DataSourceFactory();
     }
 
-    Map<DatasourceEnum, Class<? extends BaseData>> getDataMap() {
+    private DataSourceFactory() {
+        //dml解析器
+        dmlParseCache.put(DatasourceEnum.SQL_SERVER, new SqlServerDmlParse());
+        dmlParseCache.put(DatasourceEnum.CLICK_HOUSE, new ClickHouseDmlParse());
+        dmlParseCache.put(DatasourceEnum.MYSQL, new MySQLDmlParse());
+        dmlParseCache.put(DatasourceEnum.ORACLE, new OracleDmlParse());
+        //条件解析
+        conditionParseCache.put(DatasourceEnum.CLICK_HOUSE, new ClickHouseConditionParse());
+        conditionParseCache.put(DatasourceEnum.ELASTICSEARCH, new ElasticsearchConditionParse());
+        conditionParseCache.put(DatasourceEnum.MYSQL, new MySQLConditionParse());
+        conditionParseCache.put(DatasourceEnum.NEO4J, new Neo4jConditionParse());
+        conditionParseCache.put(DatasourceEnum.ORACLE, new OracleConditionParse());
+        conditionParseCache.put(DatasourceEnum.SQL_SERVER, new SqlServerConditionParse());
+        //数据操作
+        dataMap.put(DatasourceEnum.EXCEL, ExcelData.class);
+        dataMap.put(DatasourceEnum.CLICK_HOUSE, ClickHouseData.class);
+        dataMap.put(DatasourceEnum.ELASTICSEARCH, ElasticsearchData.class);
+        dataMap.put(DatasourceEnum.MONGODB, MongoDBData.class);
+        dataMap.put(DatasourceEnum.MYSQL, MySQLData.class);
+        dataMap.put(DatasourceEnum.NEO4J, Neo4jData.class);
+        dataMap.put(DatasourceEnum.ORACLE, OracleData.class);
+        dataMap.put(DatasourceEnum.SQL_SERVER, SqlServerData.class);
+        //字段映射
+        fieldMapperMap.put(DatasourceEnum.CLICK_HOUSE, ClickHouseMapper.class);
+        fieldMapperMap.put(DatasourceEnum.ELASTICSEARCH, ElasticsearchMapper.class);
+        fieldMapperMap.put(DatasourceEnum.MYSQL, MySQLFieldMapper.class);
+        fieldMapperMap.put(DatasourceEnum.ORACLE, OracleMapper.class);
+        fieldMapperMap.put(DatasourceEnum.SQL_SERVER, SqlServerFieldMapper.class);
+        //数据源
+        dataSourceMap.put(DatasourceEnum.CLICK_HOUSE, ClickHouseDatasource.class);
+        dataSourceMap.put(DatasourceEnum.ELASTICSEARCH, ElasticsearchDatasource.class);
+        dataSourceMap.put(DatasourceEnum.EXCEL, ExcelDatasource.class);
+        dataSourceMap.put(DatasourceEnum.MONGODB, MongoDBDatasource.class);
+        dataSourceMap.put(DatasourceEnum.MYSQL, MySQLDatasource.class);
+        dataSourceMap.put(DatasourceEnum.NEO4J, Neo4jDatasource.class);
+        dataSourceMap.put(DatasourceEnum.ORACLE, OracleDatasource.class);
+        dataSourceMap.put(DatasourceEnum.SQL_SERVER, SqlServerDatasource.class);
+        //连接
+        connectionClassMap.put(DatasourceEnum.MYSQL, DbConnection.class);
+        connectionClassMap.put(DatasourceEnum.ORACLE, DbConnection.class);
+        connectionClassMap.put(DatasourceEnum.SQL_SERVER, DbConnection.class);
+        connectionClassMap.put(DatasourceEnum.NEO4J, Neo4jConnection.class);
+        connectionClassMap.put(DatasourceEnum.EXCEL, ExcelConnection.class);
+    }
+
+    public static DataSourceFactory instance() {
+        return SingletonHolder.INSTANCE;
+    }
+
+    public Map<DatasourceEnum, Class<? extends BaseData>> getDataMap() {
         return dataMap;
     }
 
     ConditionParse getConditionParse(DatasourceEnum datasourceEnum) {
-        ConditionParse conditionParse = conditionParseCache.get(datasourceEnum);
-        if (conditionParse != null) {
-            return conditionParse;
-        }
-
-        Class<? extends ConditionParse> aClass = conditionParseMap.get(datasourceEnum);
-        if (aClass == null) {
-            return null;
-        }
-
-        conditionParse = ReflectUtil.newInstance(aClass);
-        conditionParseCache.put(datasourceEnum, conditionParse);
-        return conditionParse;
+        return conditionParseCache.get(datasourceEnum);
     }
 
     DmlParse getDmlParse(DatasourceEnum datasourceEnum) {
-        DmlParse dmlParse = dmlParseCache.get(datasourceEnum);
-        if (dmlParse != null) {
-            return dmlParse;
-        }
-
-        Class<? extends DmlParse> aClass = dmlParseMap.get(datasourceEnum);
-        if (aClass == null) {
-            return null;
-        }
-
-        dmlParse = ReflectUtil.newInstance(aClass);
-        dmlParseCache.put(datasourceEnum, dmlParse);
-        return dmlParse;
+        return dmlParseCache.get(datasourceEnum);
     }
 
     /**
@@ -154,153 +143,4 @@ public class DataSourceFactory {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
     }
-
-    /**
-     * 数据操作类扫描
-     *
-     * @throws Exception
-     */
-    private void scan() throws Exception {
-        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(
-                false);
-        // 扫描带有自定义注解的类
-        provider.addIncludeFilter(new AnnotationTypeFilter(ConnectionType.class));
-
-        List<String> paths = Lists.newArrayList(Constants.Data.SCAN_PATH_CONNECTION);
-        //初始化condition上下文
-        ConditionContextImpl conditionContext = new ConditionContextImpl(beanFactory);
-        for (String path : paths) {
-            Set<BeanDefinition> scanList = provider.findCandidateComponents(path);
-            for (BeanDefinition bean : scanList) {
-                Class<?> clazz = Class.forName(bean.getBeanClassName());
-                ConnectionType annotation = AnnotationUtils.getAnnotation(clazz, ConnectionType.class);
-                if (annotation != null) {
-                    Class<?>[] interfaces = clazz.getInterfaces();
-                    if (ArrayUtil.isNotEmpty(interfaces)) {
-                        for (Class<?> anInterface : interfaces) {
-                            if (anInterface.equals(Connection.class)) {
-                                DS[] ds = annotation.dsType();
-
-                                for (DS d : ds) {
-                                    DatasourceEnum type = d.type();
-                                    Class<? extends Condition>[] conditionClasses = d.condition();
-                                    //条件为空
-                                    if (ArrayUtil.isEmpty(conditionClasses)) {
-                                        connectionClassMap.put(type, (Class<? extends Connection>) clazz);
-                                        continue;
-                                    }
-
-                                    boolean skip = false;
-                                    MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(bean.getBeanClassName());
-                                    AnnotationMetadata metadata = metadataReader.getAnnotationMetadata();
-                                    //遍历生成条件
-                                    for (Class<? extends Condition> conditionClazz : conditionClasses) {
-                                        Condition condition = BeanUtils.instantiateClass(conditionClazz);
-                                        if (!condition.matches(conditionContext, metadata)) {
-                                            skip = true;
-                                            break;
-                                        }
-                                    }
-                                    //是否跳过
-                                    if (skip) {
-                                        continue;
-                                    }
-
-                                    connectionClassMap.put(type, (Class<? extends Connection>) clazz);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * 数据操作类扫描
-     *
-     * @throws Exception
-     */
-    private void scan(String scanPath, Map map, Class<?> baseClass) throws Exception {
-        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(
-                false);
-        // 扫描带有自定义注解的类
-        provider.addIncludeFilter(new AnnotationTypeFilter(DS.class));
-
-        List<String> paths = Lists.newArrayList(scanPath);
-        //初始化condition上下文
-        ConditionContextImpl conditionContext = new ConditionContextImpl(beanFactory);
-        for (String path : paths) {
-            Set<BeanDefinition> scanList = provider.findCandidateComponents(path);
-            for (BeanDefinition bean : scanList) {
-                //判断是否跳过
-                if (shouldSkip(bean, conditionContext)) {
-                    continue;
-                }
-
-                Class<?> clazz = Class.forName(bean.getBeanClassName());
-                DS annotation = AnnotationUtils.getAnnotation(clazz, DS.class);
-                if (annotation != null) {
-                    if (baseClass.isInterface()) {
-                        Class<?>[] interfaces = clazz.getInterfaces();
-                        if (ArrayUtil.isNotEmpty(interfaces)) {
-                            for (Class<?> anInterface : interfaces) {
-                                if (anInterface.equals(baseClass)) {
-                                    map.put(annotation.type(), clazz);
-                                }
-                            }
-                        }
-
-                    } else {
-                        Class<?> superclass = clazz.getSuperclass();
-                        if (superclass.equals(baseClass)) {
-                            map.put(annotation.type(), clazz);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * 判断是否需要跳过
-     *
-     * @return
-     */
-    private boolean shouldSkip(BeanDefinition bean, ConditionContextImpl conditionContext) throws IOException {
-        MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(bean.getBeanClassName());
-
-        AnnotationMetadata metadata = metadataReader.getAnnotationMetadata();
-        if (metadata == null || !metadata.isAnnotated(DS.class.getName())) {
-            return true;
-        }
-
-        List<Condition> conditions = new ArrayList<>();
-
-        MultiValueMap<String, Object> attributes = metadata.getAllAnnotationAttributes(DS.class.getName(), true);
-        Object values = (attributes != null ? attributes.get("condition") : null);
-        List<String[]> conditionArray = (List<String[]>) (values != null ? values : Collections.emptyList());
-
-        for (String[] conditionClasses : conditionArray) {
-            for (String conditionClass : conditionClasses) {
-                Class<?> conditionClazz = ClassUtils.resolveClassName(conditionClass, ClassLoaderUtil.getClassLoader());
-                Condition condition = (Condition) BeanUtils.instantiateClass(conditionClazz);
-                conditions.add(condition);
-            }
-        }
-
-        if (CollUtil.isEmpty(conditions)) {
-            return false;
-        }
-
-        for (Condition condition : conditions) {
-            if (!condition.matches(conditionContext, metadata)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-
 }

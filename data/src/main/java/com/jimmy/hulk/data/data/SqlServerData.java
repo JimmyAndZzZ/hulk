@@ -6,8 +6,6 @@ import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.SqlServerCondition;
 import com.jimmy.hulk.data.core.Page;
 import com.jimmy.hulk.data.core.Wrapper;
 import com.jimmy.hulk.data.other.ConditionPart;
@@ -19,10 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.SQL_SERVER;
-
 @Slf4j
-@DS(type = SQL_SERVER, condition = SqlServerCondition.class)
 public class SqlServerData extends TransactionData {
 
     private static final String DELETE_CONDITION_TEMPLATE = "delete from {} {}";

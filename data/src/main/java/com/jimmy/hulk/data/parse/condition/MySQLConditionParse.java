@@ -4,7 +4,6 @@ import cn.hutool.core.collection.CollUtil;
 import com.jimmy.hulk.common.enums.ConditionEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.ConditionParse;
 import com.jimmy.hulk.data.core.Condition;
 
@@ -12,10 +11,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.jimmy.hulk.common.enums.DatasourceEnum.MYSQL;
 import static com.jimmy.hulk.data.utils.ConditionUtil.valueHandler;
 
-@DS(type = MYSQL)
 public class MySQLConditionParse implements ConditionParse<String> {
 
     @Override
