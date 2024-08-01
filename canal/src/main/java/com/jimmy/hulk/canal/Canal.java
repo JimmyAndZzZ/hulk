@@ -1,28 +1,21 @@
 package com.jimmy.hulk.canal;
 
 import cn.hutool.core.collection.CollUtil;
-import com.alibaba.fastjson2.JSON;
 import com.google.common.collect.Maps;
-import com.jimmy.hulk.canal.base.Callback;
 import com.jimmy.hulk.canal.base.Instance;
-import com.jimmy.hulk.canal.core.*;
+import com.jimmy.hulk.canal.core.CanalConfiguration;
 import com.jimmy.hulk.canal.enums.InstanceTypeEnum;
 import com.jimmy.hulk.canal.instance.MysqlInstance;
-import com.jimmy.hulk.common.enums.ModuleEnum;
-import com.jimmy.hulk.common.exception.HulkException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
+@Slf4j
 public class Canal {
 
-    private final Map<InstanceTypeEnum, ConcurrentMap<String, CanalInstance>> instanceMap = Maps.newHashMap();
+    private final Map<InstanceTypeEnum, ConcurrentMap<String, Instance>> instanceMap = Maps.newHashMap();
 
     private static class SingletonHolder {
 
@@ -35,14 +28,15 @@ public class Canal {
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            for (Map.Entry<InstanceTypeEnum, ConcurrentMap<String, CanalInstance>> instanceTypeEnumConcurrentMapEntry : instanceMap.entrySet()) {
-                ConcurrentMap<String, CanalInstance> value = instanceTypeEnumConcurrentMapEntry.getValue();
+            for (Map.Entry<InstanceTypeEnum, ConcurrentMap<String, Instance>> instanceTypeEnumConcurrentMapEntry : instanceMap.entrySet()) {
+                ConcurrentMap<String, Instance> value = instanceTypeEnumConcurrentMapEntry.getValue();
 
-                Collection<CanalInstance> values = value.values();
+                Collection<Instance> values = value.values();
                 if (CollUtil.isNotEmpty(values)) {
-                    for (CanalInstance instance : values) {
-                        instance.getInstance().stop();
-                        instance.getExecutorService().shutdown();
+                    for (Instance instance : values) {
+                        if (instance.isStart()) {
+                            instance.stop();
+                        }
                     }
                 }
             }
@@ -53,71 +47,48 @@ public class Canal {
         return SingletonHolder.INSTANCE;
     }
 
-    public void register(CanalConfiguration canalConfiguration, Callback callback) {
+    public void remove(InstanceTypeEnum instanceTypeEnum, String destination) {
+        Instance remove = instanceMap.get(instanceTypeEnum).remove(destination);
+        if (remove != null) {
+            if (remove.isStart()) {
+                remove.stop();
+            }
+
+            remove.destroy();
+        }
+    }
+
+    public Instance get(CanalConfiguration canalConfiguration) {
         String destination = canalConfiguration.getDestination();
         InstanceTypeEnum instanceTypeEnum = canalConfiguration.getInstanceTypeEnum();
 
-        switch (instanceTypeEnum) {
-            case MYSQL:
-                ConcurrentMap<String, CanalInstance> instanceConcurrentMap = instanceMap.get(instanceTypeEnum);
+        ConcurrentMap<String, Instance> instanceConcurrentMap = instanceMap.get(instanceTypeEnum);
 
-                if (instanceConcurrentMap.containsKey(destination)) {
-                    throw new HulkException("destination has exist " + destination, ModuleEnum.CANAL);
-                }
-
-                CanalInstance canalInstance = new CanalInstance();
-
-                CanalInstance put = instanceConcurrentMap.putIfAbsent(destination, canalInstance);
-                if (put != null) {
-                    throw new HulkException("destination has exist " + destination, ModuleEnum.CANAL);
-                }
-
-                canalInstance.setInstance(new MysqlInstance(
-                        canalConfiguration.getFileDataDir(),
-                        destination,
-                        canalConfiguration.getSlaveId(),
-                        canalConfiguration.getHost(),
-                        canalConfiguration.getPort(),
-                        canalConfiguration.getUsername(),
-                        canalConfiguration.getPassword(),
-                        canalConfiguration.getDefaultDatabaseName(),
-                        canalConfiguration.getFilterExpression(),
-                        canalConfiguration.getBlacklistExpression(),
-                        canalConfiguration.isGTIDMode()));
-                canalInstance.setExecutorService(Executors.newSingleThreadExecutor());
-
-                canalInstance.getInstance().subscribe();
-                canalInstance.getInstance().start();
-                canalInstance.getExecutorService().submit((Runnable) () -> {
-                    int i = 0;
-                    while (true) {
-                        CanalMessage canalMessage = canalInstance.getInstance().get(canalConfiguration.getBatchSize(), canalConfiguration.getTimeout(), canalConfiguration.getTimeUnit());
-
-                        Long id = canalMessage.getId();
-                        List<CanalRowData> canalRowDataList = canalMessage.getCanalRowDataList();
-                        if (id.equals(-1L)) {
-                            if (i++ > 3) {
-                                LockSupport.parkNanos(3_000_000_000L);
-                            } else {
-                                Thread.yield();
-                            }
-
-                            continue;
-                        }
-
-                        i = 0;
-
-                        try {
-                            if (CollUtil.isNotEmpty(canalRowDataList)) {
-                                callback.callback(canalRowDataList);
-                            }
-
-                            canalInstance.getInstance().ack(id);
-                        } catch (Exception e) {
-                            canalInstance.getInstance().rollback();
-                        }
-                    }
-                });
+        Instance instance = instanceConcurrentMap.get(destination);
+        if (instance != null) {
+            return instance;
         }
+
+        return instanceConcurrentMap.computeIfAbsent(destination, s -> {
+            switch (instanceTypeEnum) {
+                case MYSQL:
+                    return new MysqlInstance(
+                            canalConfiguration.getFileDataDir(),
+                            destination,
+                            canalConfiguration.getSlaveId(),
+                            canalConfiguration.getHost(),
+                            canalConfiguration.getPort(),
+                            canalConfiguration.getUsername(),
+                            canalConfiguration.getPassword(),
+                            canalConfiguration.getDefaultDatabaseName(),
+                            canalConfiguration.getFilterExpression(),
+                            canalConfiguration.getBlacklistExpression(),
+                            canalConfiguration.isGTIDMode());
+                case BINLOG:
+                    return null;
+                default:
+                    return null;
+            }
+        });
     }
 }

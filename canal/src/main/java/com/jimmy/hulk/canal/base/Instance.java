@@ -6,11 +6,7 @@ import com.jimmy.hulk.canal.core.CanalPosition;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public interface Instance {
-
-    void start();
-
-    void stop();
+public interface Instance extends LifeCycle {
 
     void subscribe();
 

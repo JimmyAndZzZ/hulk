@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class MysqlInstance implements Instance {
+public class MysqlInstance extends AbstractInstance {
 
     private final String dataDir;
 
@@ -271,6 +271,8 @@ public class MysqlInstance implements Instance {
 
     @Override
     public void start() {
+        super.start();
+
         if (!this.fileMixedMetaManager.isStart()) {
             this.fileMixedMetaManager.start();
         }
@@ -298,6 +300,8 @@ public class MysqlInstance implements Instance {
 
     @Override
     public void stop() {
+        super.stop();
+
         if (this.mysqlEventParser.isStart()) {
             this.mysqlEventParser.stop();
         }
