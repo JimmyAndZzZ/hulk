@@ -201,6 +201,8 @@ public class MysqlInstance implements Instance {
 
                     switch (eventType) {
                         case INSERT:
+                            canalRowData.setType("insert");
+
                             Map<String, String> insertData = Maps.newHashMap();
 
                             for (CanalEntry.Column column : afterColumnsList) {
@@ -210,6 +212,8 @@ public class MysqlInstance implements Instance {
                             canalRowData.getData().add(insertData);
                             break;
                         case UPDATE:
+                            canalRowData.setType("update");
+
                             Map<String, String> updateTargetData = Maps.newHashMap();
                             Map<String, String> updateSourceData = Maps.newHashMap();
 
@@ -217,10 +221,23 @@ public class MysqlInstance implements Instance {
                                 updateTargetData.put(column.getName(), column.getValue());
                             }
 
+                            for (CanalEntry.Column column : beforeColumnsList) {
+                                String name = column.getName();
+                                String value = column.getValue();
+
+                                String s = updateTargetData.get(name);
+
+                                if (!StrUtil.equals(s, value)) {
+                                    updateSourceData.put(name, value);
+                                }
+                            }
 
                             canalRowData.getData().add(updateTargetData);
-
+                            canalRowData.getOld().add(updateSourceData);
+                            break;
                         case DELETE:
+                            canalRowData.setType("delete");
+
                             Map<String, String> deleteData = Maps.newHashMap();
 
                             for (CanalEntry.Column column : afterColumnsList) {
