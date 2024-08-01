@@ -46,6 +46,12 @@ public class Select extends SQL<List<Map<String, Object>>> {
 
     private final Map<String, String> randomFieldCache = Maps.newHashMap();
 
+    private final SystemVariableContext systemVariableContext;
+
+    public Select() {
+        this.systemVariableContext = SystemVariableContext.instance();
+    }
+
     @Override
     public List<Map<String, Object>> process(ParseResultNode parseResultNode) {
         try {

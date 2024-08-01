@@ -9,6 +9,7 @@ import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.jimmy.hulk.actuator.support.SQLBox;
 import com.jimmy.hulk.common.other.FileReader;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
@@ -29,9 +30,14 @@ public class Cache extends SQL<List<Map<String, Object>>> {
 
     private final static String CACHE_FILE_PATH = "cache";
 
-    private final Map<String, CountDownLatch> wait = Maps.newConcurrentMap();
+    private final Select select;
 
-    private Select select;
+    private final Map<String, CountDownLatch> wait;
+
+    public Cache() {
+        this.wait = Maps.newConcurrentMap();
+        this.select = SQLBox.instance().get(Select.class);
+    }
 
     @Override
     public List<Map<String, Object>> process(ParseResultNode parseResultNode) throws Exception {
@@ -74,7 +80,7 @@ public class Cache extends SQL<List<Map<String, Object>>> {
      * @return
      */
     private List<Map<String, Object>> loadFromCache(String md5, String filePath, String expire, ParseResultNode parseResultNode) throws Exception {
-        Integer expireTime = Convert.toInt(expire, systemVariableContext.getDefaultExpire());
+        Integer expireTime = Convert.toInt(expire, SystemVariableContext.instance().getDefaultExpire());
         //判断是否击中缓存
         if (FileUtil.exist(filePath)) {
             Date now = new Date();
@@ -129,9 +135,7 @@ public class Cache extends SQL<List<Map<String, Object>>> {
                     throw e;
                 }
             });
-            bigFileReader = builder
-                    .charset(StandardCharsets.UTF_8)
-                    .bufferSize(1024).build();
+            bigFileReader = builder.charset(StandardCharsets.UTF_8).bufferSize(1024).build();
             bigFileReader.start();
             return content;
         } catch (Exception e) {

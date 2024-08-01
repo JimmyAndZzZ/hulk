@@ -10,6 +10,7 @@ import com.jimmy.hulk.actuator.utils.SQLUtil;
 import com.jimmy.hulk.actuator.core.ConditionPart;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.authority.base.AuthenticationManager;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
@@ -32,11 +33,14 @@ import java.util.Map;
 @Slf4j
 public class Update extends SQL<Integer> {
 
-    @Autowired
-    private SystemVariableContext systemVariableContext;
+    private final SystemVariableContext systemVariableContext;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManagerDelegator authenticationManagerDelegator;
+
+    public Update() {
+        this.systemVariableContext = SystemVariableContext.instance();
+        this.authenticationManagerDelegator = AuthenticationManagerDelegator.instance();
+    }
 
     @Override
     public boolean verification(ParseResultNode parseResultNode) {
@@ -64,7 +68,7 @@ public class Update extends SQL<Integer> {
         tableNode.setDsName(ExecuteHolder.getDatasourceName());
         //是否能够执行SQL
         Actuator actuator = partSupport.getActuator(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), false);
-        if (ExecuteHolder.isAutoCommit() && this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
+        if (ExecuteHolder.isAutoCommit() && this.isExecuteBySQL(parseResultNode) && authenticationManagerDelegator.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
             String sql = parseResultNode.getSql();
             log.info("准备执行SQL:{}", sql);
             return actuator.update(sql);

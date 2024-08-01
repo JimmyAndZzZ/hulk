@@ -2,7 +2,7 @@ package com.jimmy.hulk.actuator.sql;
 
 import cn.hutool.core.collection.CollUtil;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
-import com.jimmy.hulk.authority.base.AuthenticationManager;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
@@ -17,15 +17,17 @@ import com.jimmy.hulk.parse.core.element.ConditionNode;
 import com.jimmy.hulk.parse.core.element.TableNode;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 @Slf4j
 public class Delete extends SQL<Integer> {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManagerDelegator authenticationManagerDelegator;
+
+    public Delete() {
+        this.authenticationManagerDelegator = AuthenticationManagerDelegator.instance();
+    }
 
     @Override
     public Integer process(ParseResultNode parseResultNode) throws Exception {
@@ -39,7 +41,7 @@ public class Delete extends SQL<Integer> {
         TableNode tableNode = tableNodes.stream().findFirst().get();
         tableNode.setDsName(ExecuteHolder.getDatasourceName());
         //是否能够执行SQL
-        if (ExecuteHolder.isAutoCommit() && this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
+        if (ExecuteHolder.isAutoCommit() && this.isExecuteBySQL(parseResultNode) && authenticationManagerDelegator.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
             Actuator actuator = partSupport.getActuator(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), false);
 
             String sql = parseResultNode.getSql();

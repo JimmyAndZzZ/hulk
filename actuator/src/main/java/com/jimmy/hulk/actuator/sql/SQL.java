@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
-abstract class SQL<T> implements Operate {
+public abstract class SQL<T> implements Operate {
 
     protected PartSupport partSupport;
 

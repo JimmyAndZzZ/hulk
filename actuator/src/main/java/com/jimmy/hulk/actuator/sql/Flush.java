@@ -5,9 +5,11 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.Expression;
 import com.jimmy.hulk.actuator.enums.FlushTypeEnum;
+import com.jimmy.hulk.actuator.support.SQLBox;
 import com.jimmy.hulk.common.other.FileReader;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
@@ -29,12 +31,16 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 public class Flush extends SQL<Integer> {
 
-    @Autowired
-    private Select select;
+    private final Select select;
+
+    public Flush() {
+        this.select = SQLBox.instance().get(Select.class);
+    }
 
     @Override
     public Integer process(ParseResultNode parseResultNode) throws Exception {

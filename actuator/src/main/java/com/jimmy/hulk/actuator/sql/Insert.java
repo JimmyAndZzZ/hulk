@@ -6,7 +6,7 @@ import com.google.common.collect.Maps;
 import com.jimmy.hulk.actuator.core.InsertResult;
 import com.jimmy.hulk.actuator.enums.PriKeyStrategyTypeEnum;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
-import com.jimmy.hulk.authority.base.AuthenticationManager;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.config.properties.TableConfigProperty;
@@ -17,7 +17,6 @@ import com.jimmy.hulk.parse.core.element.ColumnNode;
 import com.jimmy.hulk.parse.core.element.TableNode;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
@@ -25,11 +24,14 @@ import java.util.Map;
 @Slf4j
 public class Insert extends SQL<InsertResult> {
 
-    @Autowired
-    private TableConfig tableConfig;
+    private final TableConfig tableConfig;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManagerDelegator authenticationManagerDelegator;
+
+    public Insert() {
+        this.tableConfig = TableConfig.instance();
+        this.authenticationManagerDelegator = AuthenticationManagerDelegator.instance();
+    }
 
     @Override
     public InsertResult process(ParseResultNode parseResultNode) throws Exception {
@@ -47,7 +49,7 @@ public class Insert extends SQL<InsertResult> {
         TableNode tableNode = tableNodes.stream().findFirst().get();
         tableNode.setDsName(ExecuteHolder.getDatasourceName());
         //是否能够执行SQL
-        if (ExecuteHolder.isAutoCommit() && !partSupport.isConfigTableWhenInsert(tableNode.getDsName(), tableNode.getTableName()) && this.isExecuteBySQL(parseResultNode) && authenticationManager.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
+        if (ExecuteHolder.isAutoCommit() && !partSupport.isConfigTableWhenInsert(tableNode.getDsName(), tableNode.getTableName()) && this.isExecuteBySQL(parseResultNode) && authenticationManagerDelegator.allowExecuteSQL(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), tableNode.getTableName())) {
             String sql = parseResultNode.getSql();
 
             Actuator actuator = partSupport.getActuator(ExecuteHolder.getUsername(), ExecuteHolder.getDatasourceName(), false);
