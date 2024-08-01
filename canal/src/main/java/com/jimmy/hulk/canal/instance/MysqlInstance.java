@@ -66,10 +66,6 @@ public class MysqlInstance implements Instance {
 
     private final MemoryEventStoreWithBuffer memoryEventStoreWithBuffer;
 
-    public MysqlInstance(String fileDataDir, String destination, Long slaveId, String host, Integer port, String username, String password, String defaultDatabaseName, String filterExpression, String blacklistExpression) {
-        this(fileDataDir, destination, slaveId, host, port, username, password, defaultDatabaseName, filterExpression, blacklistExpression, false);
-    }
-
     public MysqlInstance(String fileDataDir, String destination, Long slaveId, String host, Integer port, String username, String password, String defaultDatabaseName, String filterExpression, String blacklistExpression, boolean isGTIDMode) {
         this.dataDir = fileDataDir;
         this.destination = destination;
