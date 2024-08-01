@@ -1,5 +1,7 @@
 package com.jimmy.hulk.canal.core;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -10,19 +12,29 @@ import java.util.Map;
 public class CanalRowData implements Serializable {
 
     private long id;
+
     private String database;
+
     private String table;
-    private List<String> pkNames;
-    private Boolean isDdl;
+
+    private Boolean isDdl = false;
+
     private String type;
-    // binlog executeTime
+
     private Long es;
-    // dml build timeStamp
+
     private Long ts;
+
     private String sql;
-    private Map<String, Integer> sqlType;
-    private Map<String, String> mysqlType;
-    private List<Map<String, String>> data;
-    private List<Map<String, String>> old;
+
+    private List<String> pkNames = Lists.newArrayList();
+
+    private Map<String, Integer> sqlType = Maps.newHashMap();
+
+    private Map<String, String> mysqlType = Maps.newHashMap();
+
+    private List<Map<String, String>> data = Lists.newArrayList();
+
+    private List<Map<String, String>> old = Lists.newArrayList();
 
 }

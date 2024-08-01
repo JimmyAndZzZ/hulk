@@ -1,26 +1,21 @@
 package com.jimmy.hulk.canal.instance;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.otter.canal.common.utils.ExecutorTemplate;
 import com.alibaba.otter.canal.common.utils.NamedThreadFactory;
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter;
 import com.alibaba.otter.canal.meta.FileMixedMetaManager;
-import com.alibaba.otter.canal.parse.CanalEventParser;
-import com.alibaba.otter.canal.parse.ha.CanalHAController;
 import com.alibaba.otter.canal.parse.ha.HeartBeatHAController;
-import com.alibaba.otter.canal.parse.inbound.AbstractEventParser;
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser;
-import com.alibaba.otter.canal.parse.index.CanalLogPositionManager;
 import com.alibaba.otter.canal.parse.index.FailbackLogPositionManager;
 import com.alibaba.otter.canal.parse.index.MemoryLogPositionManager;
 import com.alibaba.otter.canal.parse.index.MetaLogPositionManager;
 import com.alibaba.otter.canal.parse.support.AuthenticationInfo;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.alibaba.otter.canal.protocol.ClientIdentity;
-import com.alibaba.otter.canal.protocol.Message;
 import com.alibaba.otter.canal.protocol.position.EntryPosition;
 import com.alibaba.otter.canal.protocol.position.LogPosition;
 import com.alibaba.otter.canal.protocol.position.Position;
@@ -29,7 +24,6 @@ import com.alibaba.otter.canal.sink.entry.EntryEventSink;
 import com.alibaba.otter.canal.store.memory.MemoryEventStoreWithBuffer;
 import com.alibaba.otter.canal.store.model.Event;
 import com.alibaba.otter.canal.store.model.Events;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -42,22 +36,19 @@ import com.jimmy.hulk.common.exception.HulkException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class MysqlInstance implements Instance {
 
-    private static final List<String> typesRequiringQuotes = Arrays.asList("char", "varchar", "binary", "varbinary", "blob", "text", "enum", "set", "json", "date", "datetime", "timestamp", "time", "year");
+    private final String dataDir;
 
-    private static final Pattern PATTERN_SINGLE_QUOTE = Pattern.compile("'");
+    private final String destination;
 
     private final ThreadPoolExecutor executor;
 
@@ -75,22 +66,13 @@ public class MysqlInstance implements Instance {
 
     private final MemoryEventStoreWithBuffer memoryEventStoreWithBuffer;
 
-    public static void main(String[] args) {
-        MysqlInstance mysqlInstance = new MysqlInstance("/tmp", "zl_test", 1231231312L, "192.168.5.215", 3306, "dev", "123456", "zl_test", "zl_test.cdc_bond_mir", null);
-
-        CanalPosition canalPosition = new CanalPosition();
-        canalPosition.setTimestamp(1722405345000L);
-
-        mysqlInstance.point(canalPosition);
-        mysqlInstance.start();
-        mysqlInstance.subscribe();
-    }
-
     public MysqlInstance(String fileDataDir, String destination, Long slaveId, String host, Integer port, String username, String password, String defaultDatabaseName, String filterExpression, String blacklistExpression) {
         this(fileDataDir, destination, slaveId, host, port, username, password, defaultDatabaseName, filterExpression, blacklistExpression, false);
     }
 
     public MysqlInstance(String fileDataDir, String destination, Long slaveId, String host, Integer port, String username, String password, String defaultDatabaseName, String filterExpression, String blacklistExpression, boolean isGTIDMode) {
+        this.dataDir = fileDataDir;
+        this.destination = destination;
         this.clientIdentity = new ClientIdentity(destination, (short) 1001, "");
         //meta管理
         this.fileMixedMetaManager = new FileMixedMetaManager();
@@ -187,6 +169,7 @@ public class MysqlInstance implements Instance {
                     canalRowData.setIsDdl(true);
                     canalRowData.setSql(rowChange.getSql());
                     canalMessage.getCanalRowDataList().add(canalRowData);
+                    continue;
                 }
 
                 for (int i = 0; i < rowDatasList.size(); i++) {
@@ -195,30 +178,34 @@ public class MysqlInstance implements Instance {
                     List<CanalEntry.Column> afterColumnsList = rowData.getAfterColumnsList();
                     List<CanalEntry.Column> beforeColumnsList = rowData.getBeforeColumnsList();
 
-                    if (i == 0) {
-                        this.columnHandler(canalRowData, afterColumnsList);
-                    }
-
                     switch (eventType) {
                         case INSERT:
+                            if (i == 0) {
+                                this.columnHandler(canalRowData, afterColumnsList);
+                            }
+
                             canalRowData.setType("insert");
 
                             Map<String, String> insertData = Maps.newHashMap();
 
                             for (CanalEntry.Column column : afterColumnsList) {
-                                insertData.put(column.getName(), column.getValue());
+                                insertData.put(column.getName(), this.getValue(column));
                             }
 
                             canalRowData.getData().add(insertData);
                             break;
                         case UPDATE:
+                            if (i == 0) {
+                                this.columnHandler(canalRowData, afterColumnsList);
+                            }
+
                             canalRowData.setType("update");
 
                             Map<String, String> updateTargetData = Maps.newHashMap();
                             Map<String, String> updateSourceData = Maps.newHashMap();
 
                             for (CanalEntry.Column column : afterColumnsList) {
-                                updateTargetData.put(column.getName(), column.getValue());
+                                updateTargetData.put(column.getName(), this.getValue(column));
                             }
 
                             for (CanalEntry.Column column : beforeColumnsList) {
@@ -228,7 +215,7 @@ public class MysqlInstance implements Instance {
                                 String s = updateTargetData.get(name);
 
                                 if (!StrUtil.equals(s, value)) {
-                                    updateSourceData.put(name, value);
+                                    updateSourceData.put(name, this.getValue(column));
                                 }
                             }
 
@@ -236,12 +223,16 @@ public class MysqlInstance implements Instance {
                             canalRowData.getOld().add(updateSourceData);
                             break;
                         case DELETE:
+                            if (i == 0) {
+                                this.columnHandler(canalRowData, beforeColumnsList);
+                            }
+
                             canalRowData.setType("delete");
 
                             Map<String, String> deleteData = Maps.newHashMap();
 
-                            for (CanalEntry.Column column : afterColumnsList) {
-                                deleteData.put(column.getName(), column.getValue());
+                            for (CanalEntry.Column column : beforeColumnsList) {
+                                deleteData.put(column.getName(), this.getValue(column));
                             }
 
                             canalRowData.getData().add(deleteData);
@@ -361,6 +352,24 @@ public class MysqlInstance implements Instance {
         this.fileMixedMetaManager.clearAllBatchs(clientIdentity);
         // rollback eventStore中的状态信息
         this.memoryEventStoreWithBuffer.rollback();
+    }
+
+    @Override
+    public void destroy() {
+        FileUtil.del(dataDir + StrUtil.SLASH + destination);
+    }
+
+    /**
+     * 值获取
+     *
+     * @param column
+     * @return
+     */
+    private String getValue(CanalEntry.Column column) {
+        String value = column.getValue();
+        boolean isNull = column.getIsNull();
+
+        return isNull ? null : value;
     }
 
     /**

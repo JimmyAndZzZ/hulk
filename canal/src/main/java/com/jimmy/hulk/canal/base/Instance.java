@@ -22,5 +22,7 @@ public interface Instance {
 
     void rollback();
 
+    void destroy();
+
     CanalMessage get(int batchSize, Long timeout, TimeUnit unit);
 }
