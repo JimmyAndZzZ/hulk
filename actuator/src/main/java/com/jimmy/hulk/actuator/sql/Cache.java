@@ -33,9 +33,9 @@ public class Cache extends SQL<List<Map<String, Object>>> {
 
     private final Map<String, CountDownLatch> wait;
 
-    public Cache() {
+    public Cache(Select select) {
+        this.select = select;
         this.wait = Maps.newConcurrentMap();
-        this.select = SQLBox.instance().get(Select.class);
     }
 
     @Override

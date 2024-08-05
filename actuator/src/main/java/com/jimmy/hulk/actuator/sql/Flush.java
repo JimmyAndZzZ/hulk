@@ -37,8 +37,8 @@ public class Flush extends SQL<Integer> {
 
     private final Select select;
 
-    public Flush() {
-        this.select = SQLBox.instance().get(Select.class);
+    public Flush(Select select) {
+        this.select = select;
     }
 
     @Override

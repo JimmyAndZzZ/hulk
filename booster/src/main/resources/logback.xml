@@ -1,20 +1,18 @@
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
     <!-- 彩色日志 -->
     <!-- 彩色日志依赖的渲染类 -->
-    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
-    <conversionRule conversionWord="wex"
-                    converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
-    <conversionRule conversionWord="wEx"
-                    converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+    <conversionRule conversionWord="clr" converterClass="ch.qos.logback.classic.pattern.color.HighlightingCompositeConverter"/>
+    <conversionRule conversionWord="wex" converterClass="ch.qos.logback.classic.pattern.ThrowableProxyConverter"/>
+    <conversionRule conversionWord="wEx" converterClass="ch.qos.logback.classic.pattern.ExtendedThrowableProxyConverter"/>
 
     <property name="application_name" value="hulk"/>
     <property name="all_file_name" value="../logs/%d{yyyy-MM-dd}/${application_name}.%d{yyyy-MM-dd}.%i.log"/>
     <property name="max_history" value="60"/>
     <!-- 彩色日志格式 -->
     <property name="console_pattern"
-              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%level){blue} %clr(${PID}){magenta} %clr([%thread]){orange} %clr(%logger){cyan} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%level){blue} %clr([%thread]){orange} %clr(%logger){cyan} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
     <property name="all_file_pattern"
-              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %level ${PID}  [%thread] %logger %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread] %logger %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
 
 
     <contextName>${application_name}</contextName>

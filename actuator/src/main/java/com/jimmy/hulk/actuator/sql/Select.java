@@ -354,7 +354,6 @@ public class Select extends SQL<List<Map<String, Object>>> {
             //查询数据
             List<Map<String, Object>> maps = fetch != null && offset != null ? data.queryRange(wrapper, offset, fetch) : data.queryList(wrapper);
             if (CollUtil.isNotEmpty(maps)) {
-                //由于spring返回的是LinkedCaseInsensitiveMap，后续序列化不支持
                 for (Map<String, Object> map : maps) {
                     Fragment fragment = new Fragment();
                     fragment.setKey(map);

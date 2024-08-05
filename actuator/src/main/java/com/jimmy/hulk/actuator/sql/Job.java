@@ -17,8 +17,8 @@ public class Job extends SQL<Integer> {
 
     private final SystemVariableContext systemVariableContext;
 
-    public Job() {
-        this.select = SQLBox.instance().get(Select.class);
+    public Job(Select select) {
+        this.select = select;
         this.systemVariableContext = SystemVariableContext.instance();
     }
 

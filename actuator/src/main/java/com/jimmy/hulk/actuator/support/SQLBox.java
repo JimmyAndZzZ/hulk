@@ -16,12 +16,14 @@ public class SQLBox {
     }
 
     private SQLBox() {
-        box.put(Select.class.getName(), new Select());
-        box.put(Cache.class.getName(), new Cache());
+        Select select = new Select();
+
+        box.put(Select.class.getName(), select);
+        box.put(Cache.class.getName(), new Cache(select));
         box.put(Delete.class.getName(), new Delete());
-        box.put(Flush.class.getName(), new Flush());
+        box.put(Flush.class.getName(), new Flush(select));
         box.put(Insert.class.getName(), new Insert());
-        box.put(Job.class.getName(), new Job());
+        box.put(Job.class.getName(), new Job(select));
         box.put(Native.class.getName(), new Native());
         box.put(Update.class.getName(), new Update());
     }
