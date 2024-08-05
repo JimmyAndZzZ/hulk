@@ -6,11 +6,10 @@ import com.google.common.collect.Maps;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.data.base.DataSource;
-import com.jimmy.hulk.data.data.BaseData;
 import com.jimmy.hulk.data.base.Data;
+import com.jimmy.hulk.data.base.DataSource;
 import com.jimmy.hulk.data.config.DataSourceProperty;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.jimmy.hulk.data.data.BaseData;
 
 import java.util.Map;
 

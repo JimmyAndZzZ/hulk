@@ -1,6 +1,7 @@
 package com.jimmy.hulk.data.connection;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.db.DbUtil;
 import cn.hutool.db.sql.SqlUtil;
@@ -10,7 +11,6 @@ import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.other.ConnectionContext;
 import com.jimmy.hulk.data.other.ExecuteBody;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
@@ -78,7 +78,7 @@ public class DbConnection implements com.jimmy.hulk.data.base.Connection<Connect
     @Override
     public void close() {
         if (connection != null) {
-            DataSourceUtils.releaseConnection(connection, dataSource);
+            IoUtil.close(connection);
         }
     }
 

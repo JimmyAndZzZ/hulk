@@ -5,10 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
-import com.jimmy.hulk.common.enums.AggregateEnum;
-import com.jimmy.hulk.common.enums.ConditionEnum;
-import com.jimmy.hulk.common.enums.ConditionTypeEnum;
-import com.jimmy.hulk.common.enums.ModuleEnum;
+import com.jimmy.hulk.common.enums.*;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.core.*;
 import com.mongodb.client.*;
@@ -34,6 +31,11 @@ public class MongoDBData extends BaseData {
         MongoClient mongoClient = (MongoClient) this.dataSource.getDataSource();
         MongoDatabase database = mongoClient.getDatabase(this.schema);
         this.document = database.getCollection(this.indexName);
+    }
+
+    @Override
+    public DatasourceEnum type() {
+        return DatasourceEnum.MONGODB;
     }
 
     @Override

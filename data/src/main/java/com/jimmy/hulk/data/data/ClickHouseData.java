@@ -4,15 +4,15 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
+import com.jimmy.hulk.data.core.JdbcTemplate;
 import com.jimmy.hulk.data.core.Page;
 import com.jimmy.hulk.data.core.Wrapper;
 import com.jimmy.hulk.data.other.ConditionPart;
 import com.jimmy.hulk.data.utils.ClickHouseUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 import java.io.Serializable;
@@ -56,6 +56,11 @@ public class ClickHouseData extends BaseData {
     @Override
     public int updateBatchById(List<Map<String, Object>> docs) {
         throw new HulkException("not support update", ModuleEnum.DATA);
+    }
+
+    @Override
+    public DatasourceEnum type() {
+        return DatasourceEnum.CLICK_HOUSE;
     }
 
     @Override
@@ -188,23 +193,19 @@ public class ClickHouseData extends BaseData {
 
     @Override
     public Map<String, Object> queryOne(Wrapper wrapper) {
-        try {
-            ConditionPart conditionPart = this.conditionTrans(wrapper.getQueryPlus());
-            String sql = StrUtil.format(this.selectColumnHandler(wrapper, QUERY_LIST_TEMPLATE), indexName, conditionPart.getConditionExp()) + " limit 0,1";
+        ConditionPart conditionPart = this.conditionTrans(wrapper.getQueryPlus());
+        String sql = StrUtil.format(this.selectColumnHandler(wrapper, QUERY_LIST_TEMPLATE), indexName, conditionPart.getConditionExp()) + " limit 0,1";
 
-            log.debug("准备执行Query操作，sql:{}", sql);
+        log.debug("准备执行Query操作，sql:{}", sql);
 
-            List<Map<String, Object>> t = jdbcTemplate.queryForList(sql, conditionPart.getParam().toArray());
+        List<Map<String, Object>> t = jdbcTemplate.queryForList(sql, conditionPart.getParam().toArray());
 
-            log.debug("成功执行Query操作，sql:{}", sql);
+        log.debug("成功执行Query操作，sql:{}", sql);
 
-            if (CollUtil.isNotEmpty(t)) {
-                return ClickHouseUtil.resultMapper(t.get(0));
-            }
-
-            return null;
-        } catch (EmptyResultDataAccessException e) {
-            return null;
+        if (CollUtil.isNotEmpty(t)) {
+            return ClickHouseUtil.resultMapper(t.get(0));
         }
+
+        return null;
     }
 }

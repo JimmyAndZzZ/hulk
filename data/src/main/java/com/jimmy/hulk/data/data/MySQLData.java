@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.core.Page;
@@ -108,6 +109,11 @@ public class MySQLData extends TransactionData {
 
         transactionManager.executeBatch(bodies);
         return docs.size();
+    }
+
+    @Override
+    public DatasourceEnum type() {
+        return DatasourceEnum.MYSQL;
     }
 
     @Override

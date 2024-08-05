@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.AggregateEnum;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.core.*;
@@ -60,6 +61,11 @@ public class ExcelData extends BaseData {
         } else {
             throw new HulkException("该文件类型不符合要求" + path, ModuleEnum.DATA);
         }
+    }
+
+    @Override
+    public DatasourceEnum type() {
+        return DatasourceEnum.EXCEL;
     }
 
     @Override

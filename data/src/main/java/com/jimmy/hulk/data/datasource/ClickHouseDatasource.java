@@ -6,8 +6,8 @@ import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.ClickHouseActuator;
 import com.jimmy.hulk.data.core.Dump;
+import com.jimmy.hulk.data.core.JdbcTemplate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.clickhouse.ClickHouseDataSource;
 import ru.yandex.clickhouse.settings.ClickHouseProperties;
 

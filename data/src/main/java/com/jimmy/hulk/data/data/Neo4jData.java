@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.common.enums.AggregateEnum;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.core.*;
@@ -88,6 +89,11 @@ public class Neo4jData extends BaseData {
             return sb.toString();
         }).collect(Collectors.toList()));
         return docs.size();
+    }
+
+    @Override
+    public DatasourceEnum type() {
+        return DatasourceEnum.NEO4J;
     }
 
     @Override

@@ -10,11 +10,10 @@ import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.base.DataSource;
 import com.jimmy.hulk.data.config.DataSourceProperty;
+import com.jimmy.hulk.data.core.JdbcTemplate;
 import com.jimmy.hulk.data.core.Page;
 import com.jimmy.hulk.data.core.PageResult;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -169,7 +168,7 @@ public class OracleActuator extends Actuator<String> {
             connection.rollback();
             throw e;
         } finally {
-            DataSourceUtils.releaseConnection(connection, dataSource);
+            connection.close();
         }
     }
 

@@ -6,16 +6,12 @@ import com.google.common.collect.Maps;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.SqlServerActuator;
-import com.jimmy.hulk.data.annotation.DS;
-import com.jimmy.hulk.data.condition.SqlServerCondition;
 import com.jimmy.hulk.data.core.Dump;
+import com.jimmy.hulk.data.core.JdbcTemplate;
 import com.jimmy.hulk.data.notify.ImportNotify;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -185,7 +181,7 @@ public class SqlServerDatasource extends BaseDatasource<javax.sql.DataSource> {
                 notify.callback(sum, count.longValue());
             }
         } finally {
-            DataSourceUtils.releaseConnection(conn, connection);
+            conn.close();
             lineReader.close();
             reader.close();
             statement.close();

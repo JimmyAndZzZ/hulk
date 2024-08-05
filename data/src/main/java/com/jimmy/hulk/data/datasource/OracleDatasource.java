@@ -11,12 +11,11 @@ import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.data.actuator.OracleActuator;
 import com.jimmy.hulk.data.core.Dump;
+import com.jimmy.hulk.data.core.JdbcTemplate;
 import com.jimmy.hulk.data.notify.ImportNotify;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import javax.sql.DataSource;
 import java.io.BufferedReader;
@@ -196,7 +195,7 @@ public class OracleDatasource extends BaseDatasource<javax.sql.DataSource> {
                 }
             }
         } finally {
-            DataSourceUtils.releaseConnection(conn, connection);
+            conn.close();
             lineReader.close();
             reader.close();
             statement.close();

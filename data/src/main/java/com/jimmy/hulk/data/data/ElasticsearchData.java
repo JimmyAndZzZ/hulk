@@ -10,6 +10,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
+import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.core.*;
@@ -298,6 +299,11 @@ public class ElasticsearchData extends BaseData {
         } catch (Exception e) {
             throw new HulkException(e.getMessage(), ModuleEnum.DATA);
         }
+    }
+
+    @Override
+    public DatasourceEnum type() {
+        return DatasourceEnum.ELASTICSEARCH;
     }
 
     @Override

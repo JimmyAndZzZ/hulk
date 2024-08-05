@@ -4,14 +4,12 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
-import com.jimmy.hulk.data.annotation.DS;
 import com.jimmy.hulk.data.base.ConditionParse;
 import com.jimmy.hulk.data.base.Data;
 import com.jimmy.hulk.data.base.DataSource;
 import com.jimmy.hulk.data.base.DmlParse;
 import com.jimmy.hulk.data.core.*;
 import com.jimmy.hulk.data.other.ConditionPart;
-import org.springframework.core.annotation.AnnotationUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -65,15 +63,6 @@ public abstract class BaseData implements Data {
 
     public void setDmlParse(DmlParse dmlParse) {
         this.dmlParse = dmlParse;
-    }
-
-    public DatasourceEnum type() {
-        DS annotation = AnnotationUtils.getAnnotation(this.getClass(), DS.class);
-        if (annotation == null) {
-            return null;
-        }
-
-        return annotation.type();
     }
 
     @Override

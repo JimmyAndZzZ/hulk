@@ -4,10 +4,10 @@ import cn.hutool.core.collection.CollUtil;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
+import com.jimmy.hulk.data.core.JdbcTemplate;
 import com.jimmy.hulk.data.other.ConnectionContext;
 import com.jimmy.hulk.data.transaction.TransactionManager;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 import java.util.List;

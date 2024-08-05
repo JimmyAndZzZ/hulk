@@ -6,6 +6,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.jimmy.hulk.data.base.DataSource;
+import com.jimmy.hulk.data.core.JdbcTemplate;
 import com.jimmy.hulk.data.core.PageResult;
 import com.jimmy.hulk.common.core.Column;
 import com.jimmy.hulk.data.core.Page;
@@ -14,8 +15,6 @@ import com.jimmy.hulk.data.config.DataSourceProperty;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
 import com.jimmy.hulk.data.utils.ClickHouseUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -218,7 +217,7 @@ public class ClickHouseActuator extends Actuator<String> {
             connection.rollback();
             throw e;
         } finally {
-            DataSourceUtils.releaseConnection(connection, dataSource);
+            connection.close();
         }
     }
 }
