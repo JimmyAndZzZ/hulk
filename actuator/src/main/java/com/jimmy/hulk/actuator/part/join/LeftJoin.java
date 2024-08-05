@@ -18,19 +18,12 @@ import com.jimmy.hulk.parse.core.element.ColumnNode;
 import com.jimmy.hulk.parse.core.element.ConditionGroupNode;
 import com.jimmy.hulk.parse.core.element.TableNode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
 public class LeftJoin extends BaseJoin {
-
-    @Autowired
-    private PartSupport partSupport;
-
-    @Autowired
-    private MemoryPool memoryPool;
 
     @Override
     public List<Row> join(List<Row> master, List<Fragment> slave, TableNode tableNode, List<ConditionGroupNode> conditionGroupNodes) {
@@ -125,7 +118,7 @@ public class LeftJoin extends BaseJoin {
         }
         //防止空字段
         if (MapUtil.isNotEmpty(nullData)) {
-            nullFragment.setIndex(memoryPool.allocate(partSupport.getSerializer().serialize(nullData)));
+            nullFragment.setIndex(MemoryPool.instance().allocate(PartSupport.instance().getSerializer().serialize(nullData)));
         }
 
         Row result = new Row();

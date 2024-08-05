@@ -17,7 +17,6 @@ import com.jimmy.hulk.config.support.SystemVariableContext;
 import com.jimmy.hulk.parse.core.result.ExtraNode;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;

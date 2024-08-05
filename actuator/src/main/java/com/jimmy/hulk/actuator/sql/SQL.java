@@ -6,8 +6,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.Expression;
-import com.jimmy.hulk.actuator.part.PartSupport;
 import com.jimmy.hulk.actuator.base.Operate;
+import com.jimmy.hulk.actuator.part.PartSupport;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.enums.ColumnTypeEnum;
@@ -19,7 +19,6 @@ import com.jimmy.hulk.parse.core.element.ColumnNode;
 import com.jimmy.hulk.parse.core.element.TableNode;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;

@@ -34,7 +34,6 @@ import com.jimmy.hulk.data.other.MapComparator;
 import com.jimmy.hulk.parse.core.element.*;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
