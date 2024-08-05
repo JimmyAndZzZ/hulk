@@ -6,14 +6,18 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component
 public class SystemVariable {
 
     private final Map<String, Object> variable = Maps.newHashMap();
 
     private final Map<String, Object> sessionVariable = Maps.newHashMap();
 
-    public SystemVariable() {
+    private static class SingletonHolder {
+
+        private static final SystemVariable INSTANCE = new SystemVariable();
+    }
+
+    private SystemVariable() {
         variable.put("character_set_client", "utf8");
         variable.put("character_set_connection", "utf8");
         variable.put("character_set_results", "utf8");
@@ -38,6 +42,10 @@ public class SystemVariable {
         sessionVariable.put("transaction_read_only", "0");
         sessionVariable.put("auto_increment_increment", 1);
         sessionVariable.put("transaction_isolation", "READ-COMMITTED");
+    }
+
+    public static SystemVariable instance() {
+        return SystemVariable.SingletonHolder.INSTANCE;
     }
 
     public Object getVariable(String key, String from) {

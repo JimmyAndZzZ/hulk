@@ -1,15 +1,13 @@
 package com.jimmy.hulk.booster.action;
 
 import cn.hutool.core.collection.CollUtil;
-import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.booster.base.Action;
-import com.jimmy.hulk.parse.support.SQLParser;
+import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.protocol.reponse.OkResponse;
 import com.jimmy.hulk.protocol.reponse.select.SelectResponse;
 import com.jimmy.hulk.protocol.utils.constant.Fields;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -17,9 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class BaseAction implements Action {
-
-    @Autowired
-    protected SQLParser sqlParser;
 
     /**
      * dml执行成功

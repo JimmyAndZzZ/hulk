@@ -5,29 +5,30 @@ import com.jimmy.hulk.actuator.sql.Delete;
 import com.jimmy.hulk.actuator.sql.Insert;
 import com.jimmy.hulk.actuator.sql.Update;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
+import com.jimmy.hulk.actuator.support.SQLBox;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.data.transaction.Transaction;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import com.jimmy.hulk.parse.enums.ResultTypeEnum;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
+import com.jimmy.hulk.parse.support.SQLParser;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Slf4j
-@Component
 public class CommitAction extends BaseAction {
 
-    @Autowired
-    private Insert insert;
+    private final Insert insert;
 
-    @Autowired
-    private Update update;
+    private final Update update;
 
-    @Autowired
-    private Delete delete;
+    private final Delete delete;
+
+    public CommitAction() {
+        insert = SQLBox.instance().get(Insert.class);
+        update = SQLBox.instance().get(Update.class);
+        delete = SQLBox.instance().get(Delete.class);
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -43,7 +44,7 @@ public class CommitAction extends BaseAction {
             Transaction.openTransaction();
 
             for (String dmlSQL : waitTransactionSQL) {
-                ParseResultNode parse = sqlParser.parse(dmlSQL);
+                ParseResultNode parse = SQLParser.parse(dmlSQL);
 
                 ResultTypeEnum resultType = parse.getResultType();
                 switch (resultType) {
@@ -68,10 +69,5 @@ public class CommitAction extends BaseAction {
             waitTransactionSQL.clear();
             Transaction.close();
         }
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.COMMIT;
     }
 }

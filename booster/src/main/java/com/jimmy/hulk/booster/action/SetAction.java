@@ -1,15 +1,12 @@
 package com.jimmy.hulk.booster.action;
 
-import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.booster.base.Action;
-import com.jimmy.hulk.protocol.reponse.system.CharacterSet;
+import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.common.constant.ErrorCode;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
+import com.jimmy.hulk.protocol.reponse.system.CharacterSet;
 import com.jimmy.hulk.protocol.utils.parse.SetParse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
-@Component
 @Slf4j
 public class SetAction implements Action {
 
@@ -56,10 +53,5 @@ public class SetAction implements Action {
             default:
                 session.writeOk();
         }
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.SET;
     }
 }

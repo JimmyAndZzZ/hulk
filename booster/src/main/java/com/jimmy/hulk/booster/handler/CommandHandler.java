@@ -2,7 +2,7 @@ package com.jimmy.hulk.booster.handler;
 
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
 import com.jimmy.hulk.booster.core.Session;
-import com.jimmy.hulk.booster.support.SessionPool;
+import com.jimmy.hulk.booster.bootstrap.SessionPool;
 import com.jimmy.hulk.protocol.packages.BinaryPacket;
 import com.jimmy.hulk.protocol.packages.MySQLPacket;
 import com.jimmy.hulk.common.constant.ErrorCode;
@@ -19,9 +19,9 @@ public class CommandHandler extends ChannelHandlerAdapter {
 
     private static final long IDLE_TIME_OUT = 36 * 3600;
 
-    private Session session;
+    private final Session session;
 
-    private SessionPool sessionPool;
+    private final SessionPool sessionPool;
 
     public CommandHandler(Session session, SessionPool sessionPool) {
         this.session = session;

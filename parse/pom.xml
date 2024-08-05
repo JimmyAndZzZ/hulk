@@ -17,11 +17,6 @@
             <artifactId>jsqlparser</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>com.jimmy</groupId>
             <artifactId>common</artifactId>
             <version>0.0.1-SNAPSHOT</version>

@@ -1,34 +1,48 @@
-package com.jimmy.hulk.booster.support;
+package com.jimmy.hulk.booster.bootstrap;
 
-import com.jimmy.hulk.common.other.IntObjectHashMap;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
+import com.jimmy.hulk.booster.action.*;
 import com.jimmy.hulk.booster.base.Action;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
+import com.jimmy.hulk.common.other.IntObjectHashMap;
 import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
-
-import java.util.Collection;
 
 @Slf4j
-@Component
 public class SQLExecutor {
 
-    private final IntObjectHashMap<Action> actions = new IntObjectHashMap();
+    private final IntObjectHashMap<Action> actions = new IntObjectHashMap<>();
 
-    @Autowired
-    private ApplicationContext applicationContext;
+    private static class SingletonHolder {
 
-    public void prepareAction() {
-        Collection<Action> values = applicationContext.getBeansOfType(Action.class).values();
-        for (Action value : values) {
-            actions.put(value.type(), value);
-        }
+        private static final SQLExecutor INSTANCE = new SQLExecutor();
+    }
+
+    private SQLExecutor() {
+        actions.put(QueryParse.ALTER, new AlterAction());
+        actions.put(QueryParse.CACHE, new CacheAction());
+        actions.put(QueryParse.COMMIT, new CommitAction());
+        actions.put(QueryParse.CREATE_TABLE, new CreateTableAction());
+        actions.put(QueryParse.DELETE, new DeleteAction());
+        actions.put(QueryParse.DROP_TABLE, new DropTableAction());
+        actions.put(QueryParse.FLUSH, new FlushAction());
+        actions.put(QueryParse.INSERT, new InsertAction());
+        actions.put(QueryParse.JOB, new JobAction());
+        actions.put(QueryParse.KILL, new KillAction());
+        actions.put(QueryParse.NATIVE, new NativeAction());
+        actions.put(QueryParse.ROLLBACK, new RollbackAction());
+        actions.put(QueryParse.SELECT, new SelectAction());
+        actions.put(QueryParse.SET, new SetAction());
+        actions.put(QueryParse.SHOW, new ShowAction());
+        actions.put(QueryParse.UPDATE, new UpdateAction());
+        actions.put(QueryParse.USE, new UseAction());
+    }
+
+    public static SQLExecutor instance() {
+        return SQLExecutor.SingletonHolder.INSTANCE;
     }
 
     public void execute(String sql, Session session) {

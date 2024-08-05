@@ -12,17 +12,18 @@ import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.Expression;
 import com.jimmy.hulk.actuator.sql.Select;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
+import com.jimmy.hulk.actuator.support.SQLBox;
 import com.jimmy.hulk.authority.datasource.DatasourceCenter;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.booster.core.SystemVariable;
 import com.jimmy.hulk.common.constant.Constants;
+import com.jimmy.hulk.common.core.Column;
+import com.jimmy.hulk.common.core.Table;
 import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 import com.jimmy.hulk.common.enums.FieldTypeEnum;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
-import com.jimmy.hulk.common.core.Column;
-import com.jimmy.hulk.common.core.Table;
 import com.jimmy.hulk.data.utils.ConditionUtil;
 import com.jimmy.hulk.parse.core.element.ColumnNode;
 import com.jimmy.hulk.parse.core.element.ConditionGroupNode;
@@ -30,14 +31,12 @@ import com.jimmy.hulk.parse.core.element.ConditionNode;
 import com.jimmy.hulk.parse.core.element.TableNode;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
 import com.jimmy.hulk.parse.enums.ResultTypeEnum;
+import com.jimmy.hulk.parse.support.SQLParser;
 import com.jimmy.hulk.protocol.reponse.select.*;
 import com.jimmy.hulk.protocol.utils.constant.Fields;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import com.jimmy.hulk.protocol.utils.parse.SelectParse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.List;
@@ -46,7 +45,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-@Component
 public class SelectAction extends BaseAction {
 
     private static final String VIEWS = "VIEWS";
@@ -76,14 +74,17 @@ public class SelectAction extends BaseAction {
 
     private final Map<String, Integer> columnsCountMap = Maps.newHashMap();
 
-    @Autowired
-    private Select select;
+    private final Select select;
 
-    @Autowired
-    private SystemVariable systemVariable;
+    private final SystemVariable systemVariable;
 
-    @Autowired
-    private DatasourceCenter datasourceCenter;
+    private final DatasourceCenter datasourceCenter;
+
+    public SelectAction() {
+        this.select = SQLBox.instance().get(Select.class);
+        this.systemVariable = SystemVariable.instance();
+        this.datasourceCenter = DatasourceCenter.instance();
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -162,7 +163,7 @@ public class SelectAction extends BaseAction {
                     break;
                 }
                 //正常SQL执行
-                ParseResultNode parseResultNode = sqlParser.parse(sql);
+                ParseResultNode parseResultNode = SQLParser.parse(sql);
                 if (!ResultTypeEnum.SELECT.equals(parseResultNode.getResultType())) {
                     throw new HulkException("解析异常", ModuleEnum.BOOSTER);
                 }
@@ -228,11 +229,6 @@ public class SelectAction extends BaseAction {
         }
     }
 
-    @Override
-    public int type() {
-        return QueryParse.SELECT;
-    }
-
     /**
      * 系统变量处理
      *
@@ -250,7 +246,7 @@ public class SelectAction extends BaseAction {
         //建立虚表
         replace = StrUtil.builder().append(replace).append(" from dual").toString();
 
-        ParseResultNode parse = sqlParser.parse(replace);
+        ParseResultNode parse = SQLParser.parse(replace);
         if (!parse.getResultType().equals(ResultTypeEnum.SELECT)) {
             throw new HulkException("parse fail", ModuleEnum.PARSE);
         }

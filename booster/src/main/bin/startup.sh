@@ -58,7 +58,7 @@ echo "cd to $bin_abs_path for workaround relative path"
 cd $bin_abs_path
 
 echo CLASSPATH :$class_path
-$JAVA $JAVA_OPTS $JAVA_DEBUG_OPT $HULK_OPTS -classpath .:$class_path com.jimmy.hulk.booster.App 1>>/dev/null 2>&1 &
+$JAVA $JAVA_OPTS $JAVA_DEBUG_OPT $HULK_OPTS -classpath .:$class_path com.jimmy.hulk.booster.Launch 1>>/dev/null 2>&1 &
 echo $! > $base/bin/hulk.pid
 
 echo "cd to $current_path for continue"

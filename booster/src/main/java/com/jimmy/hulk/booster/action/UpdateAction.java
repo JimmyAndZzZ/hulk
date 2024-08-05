@@ -1,17 +1,18 @@
 package com.jimmy.hulk.booster.action;
 
 import com.jimmy.hulk.actuator.sql.Update;
+import com.jimmy.hulk.actuator.support.SQLBox;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import com.jimmy.hulk.parse.support.SQLParser;
 
-@Component
 public class UpdateAction extends BaseAction {
 
-    @Autowired
-    private Update update;
+    private final Update update;
+
+    public UpdateAction() {
+        this.update = SQLBox.instance().get(Update.class);
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -22,12 +23,7 @@ public class UpdateAction extends BaseAction {
             return;
         }
         //正常SQL执行
-        ParseResultNode parse = sqlParser.parse(sql);
+        ParseResultNode parse = SQLParser.parse(sql);
         this.success(session, update.execute(parse));
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.UPDATE;
     }
 }

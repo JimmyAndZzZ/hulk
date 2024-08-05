@@ -1,7 +1,7 @@
 package com.jimmy.hulk.booster.handler;
 
 import com.jimmy.hulk.booster.core.Session;
-import com.jimmy.hulk.booster.support.SessionPool;
+import com.jimmy.hulk.booster.bootstrap.SessionPool;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,9 +12,9 @@ import java.io.IOException;
 @Slf4j
 public class ExceptionHandler extends ChannelHandlerAdapter {
 
-    private Session session;
+    private final Session session;
 
-    private SessionPool sessionPool;
+    private final SessionPool sessionPool;
 
     public ExceptionHandler(Session session, SessionPool sessionPool) {
         this.session = session;

@@ -1,17 +1,16 @@
 package com.jimmy.hulk.booster.action;
 
-import com.jimmy.hulk.authority.base.AuthenticationManager;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.common.constant.ErrorCode;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
 public class UseAction extends BaseAction {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManagerDelegator authenticationManagerDelegator;
+
+    public UseAction() {
+        this.authenticationManagerDelegator = AuthenticationManagerDelegator.instance();
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -28,17 +27,12 @@ public class UseAction extends BaseAction {
             return;
         }
         //权限判断
-        if (!authenticationManager.checkConfigSchemaByUsername(session.getUser(), schema)) {
+        if (!authenticationManagerDelegator.checkConfigSchemaByUsername(session.getUser(), schema)) {
             session.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database");
             return;
         }
 
         session.setSchema(schema);
         session.writeOk();
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.USE;
     }
 }

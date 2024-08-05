@@ -7,6 +7,7 @@ import com.google.common.collect.Maps;
 import com.jimmy.hulk.actuator.part.PartSupport;
 import com.jimmy.hulk.actuator.sql.Select;
 import com.jimmy.hulk.actuator.support.ExecuteHolder;
+import com.jimmy.hulk.actuator.support.SQLBox;
 import com.jimmy.hulk.authority.datasource.DatasourceCenter;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.common.core.Column;
@@ -15,34 +16,33 @@ import com.jimmy.hulk.config.support.DatabaseConfig;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.protocol.reponse.ErrorResponse;
 import com.jimmy.hulk.protocol.reponse.show.*;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import com.jimmy.hulk.protocol.utils.parse.ShowParse;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Component
 @Slf4j
 public class ShowAction extends BaseAction {
 
     private static final String SHOW_VARIABLES_SQL = "SHOW VARIABLES LIKE 'lower_case_%'; SHOW VARIABLES LIKE 'sql_mode'; SELECT COUNT(*) AS support_ndb FROM information_schema.ENGINES WHERE Engine = 'ndbcluster'";
 
-    @Autowired
-    private Select select;
+    private final Select select;
 
-    @Autowired
-    private PartSupport partSupport;
+    private final PartSupport partSupport;
 
-    @Autowired
-    private DatabaseConfig databaseConfig;
+    private final DatabaseConfig databaseConfig;
 
-    @Autowired
-    private DatasourceCenter datasourceCenter;
+    private final DatasourceCenter datasourceCenter;
+
+    public ShowAction() {
+        this.select = SQLBox.instance().get(Select.class);
+        this.partSupport = PartSupport.instance();
+        this.databaseConfig = DatabaseConfig.instance();
+        this.datasourceCenter = DatasourceCenter.instance();
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -117,11 +117,6 @@ public class ShowAction extends BaseAction {
                 ErrorResponse.response(session, "not support this sql");
                 break;
         }
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.SHOW;
     }
 
     /**

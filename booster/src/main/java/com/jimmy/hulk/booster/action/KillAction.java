@@ -2,19 +2,18 @@ package com.jimmy.hulk.booster.action;
 
 import cn.hutool.core.util.StrUtil;
 import com.jimmy.hulk.booster.core.Session;
-import com.jimmy.hulk.booster.support.SessionPool;
+import com.jimmy.hulk.booster.bootstrap.SessionPool;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import com.jimmy.hulk.protocol.packages.OkPacket;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import io.netty.channel.ChannelHandlerContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
 public class KillAction extends BaseAction {
 
-    @Autowired
-    private SessionPool sessionPool;
+    private final SessionPool sessionPool;
+
+    public KillAction() {
+        this.sessionPool = SessionPool.instance();
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -56,10 +55,5 @@ public class KillAction extends BaseAction {
         } else {
             session.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
         }
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.KILL;
     }
 }

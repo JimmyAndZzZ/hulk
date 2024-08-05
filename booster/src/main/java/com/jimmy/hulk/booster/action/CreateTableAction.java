@@ -17,15 +17,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
-@Component
 @Slf4j
 public class CreateTableAction extends BaseAction {
 
-    @Autowired
-    private AlterParser alterParser;
+    private final PartSupport partSupport;
 
-    @Autowired
-    private PartSupport partSupport;
+    public CreateTableAction() {
+        this.partSupport = PartSupport.instance();
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -36,7 +35,7 @@ public class CreateTableAction extends BaseAction {
             return;
         }
 
-        TableNode tableNode = alterParser.tableParse(sql);
+        TableNode tableNode = AlterParser.tableParse(sql);
         if (tableNode == null) {
             throw new HulkException("创建表失败", ModuleEnum.BOOSTER);
         }
@@ -45,10 +44,5 @@ public class CreateTableAction extends BaseAction {
         table.setTableName(tableNode.getTableName());
         table.setColumns(tableNode.getColumnNodes().stream().map(bean -> bean.build()).collect(Collectors.toList()));
         actuator.createTable(table);
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.CREATE_TABLE;
     }
 }

@@ -2,12 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.1.2.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
 
     <groupId>com.jimmy</groupId>
     <artifactId>hulk</artifactId>
@@ -30,7 +24,6 @@
 
     <properties>
         <logback.version>1.2.9</logback.version>
-        <spring.boot.starter.version>2.1.2.RELEASE</spring.boot.starter.version>
         <commons.io.version>2.4</commons.io.version>
         <commons.version>3.5</commons.version>
         <mysql.version>5.1.47</mysql.version>
@@ -58,10 +51,16 @@
         <mssql.version>9.2.1.jre8</mssql.version>
         <mongodb.version>4.4.2</mongodb.version>
         <canal.version>1.1.7</canal.version>
+        <hikari.version>3.2.0</hikari.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>${hikari.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.alibaba.otter</groupId>
                 <artifactId>canal.parse</artifactId>

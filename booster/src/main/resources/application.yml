@@ -1,7 +1,0 @@
-# 开发环境配置
-server:
-  # 服务端口
-  port: 6006
-  servlet:
-    # 项目contextPath
-    context-path: /

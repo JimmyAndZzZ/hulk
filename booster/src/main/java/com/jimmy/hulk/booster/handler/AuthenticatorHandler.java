@@ -2,10 +2,10 @@ package com.jimmy.hulk.booster.handler;
 
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
-import com.jimmy.hulk.authority.base.AuthenticationManager;
 import com.jimmy.hulk.authority.core.UserDetail;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
 import com.jimmy.hulk.booster.core.Session;
-import com.jimmy.hulk.booster.support.SessionPool;
+import com.jimmy.hulk.booster.bootstrap.SessionPool;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import com.jimmy.hulk.protocol.packages.AuthPacket;
 import com.jimmy.hulk.protocol.packages.BinaryPacket;
@@ -29,16 +29,16 @@ public class AuthenticatorHandler extends ChannelHandlerAdapter {
 
     private byte[] seed;
 
-    private Session session;
+    private final Session session;
 
-    private SessionPool sessionPool;
+    private final SessionPool sessionPool;
 
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManagerDelegator authenticationManagerDelegator;
 
-    public AuthenticatorHandler(Session session, SessionPool sessionPool, AuthenticationManager authenticationManager) {
+    public AuthenticatorHandler(Session session, SessionPool sessionPool) {
         this.session = session;
         this.sessionPool = sessionPool;
-        this.authenticationManager = authenticationManager;
+        this.authenticationManagerDelegator = AuthenticationManagerDelegator.instance();
     }
 
     /**
@@ -135,7 +135,7 @@ public class AuthenticatorHandler extends ChannelHandlerAdapter {
             return false;
         }
 
-        UserDetail userDetail = authenticationManager.getUserDetail(user);
+        UserDetail userDetail = authenticationManagerDelegator.getUserDetail(user);
         if (userDetail == null) {
             return false;
         }

@@ -8,23 +8,19 @@ import com.jimmy.hulk.common.enums.DatasourceEnum;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.parse.core.element.AlterNode;
 import com.jimmy.hulk.parse.support.AlterParser;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
 @Slf4j
 public class AlterAction extends BaseAction {
 
-    @Autowired
-    private AlterParser alterParser;
+    private final PartSupport partSupport;
 
-    @Autowired
-    private PartSupport partSupport;
+    public AlterAction() {
+        this.partSupport = PartSupport.instance();
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -35,14 +31,9 @@ public class AlterAction extends BaseAction {
             return;
         }
 
-        List<AlterNode> alterNodes = alterParser.alterParse(sql);
+        List<AlterNode> alterNodes = AlterParser.alterParse(sql);
         if (CollUtil.isNotEmpty(alterNodes)) {
-            actuator.executeAlter(alterNodes.stream().map(alterNode -> alterNode.build()).collect(Collectors.toList()));
+            actuator.executeAlter(alterNodes.stream().map(AlterNode::build).collect(Collectors.toList()));
         }
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.ALTER;
     }
 }

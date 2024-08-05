@@ -2,17 +2,18 @@ package com.jimmy.hulk.booster.action;
 
 import com.jimmy.hulk.actuator.core.InsertResult;
 import com.jimmy.hulk.actuator.sql.Insert;
+import com.jimmy.hulk.actuator.support.SQLBox;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.parse.core.result.ParseResultNode;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import com.jimmy.hulk.parse.support.SQLParser;
 
-@Component
 public class InsertAction extends BaseAction {
 
-    @Autowired
-    private Insert insert;
+    private final Insert insert;
+
+    public InsertAction() {
+        this.insert = SQLBox.instance().get(Insert.class);
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -23,7 +24,7 @@ public class InsertAction extends BaseAction {
             return;
         }
         //正常SQL执行
-        ParseResultNode parse = sqlParser.parse(sql);
+        ParseResultNode parse = SQLParser.parse(sql);
 
         InsertResult process = insert.execute(parse);
         Long priValue = process.getPriValue();
@@ -32,10 +33,5 @@ public class InsertAction extends BaseAction {
         } else {
             this.success(session, process.getRow(), priValue.intValue());
         }
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.INSERT;
     }
 }

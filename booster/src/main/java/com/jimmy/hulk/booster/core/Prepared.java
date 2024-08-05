@@ -8,7 +8,7 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.google.common.collect.Maps;
 import com.google.common.escape.Escaper;
 import com.google.common.escape.Escapers;
-import com.jimmy.hulk.booster.support.SQLExecutor;
+import com.jimmy.hulk.booster.bootstrap.SQLExecutor;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.config.support.SystemVariableContext;
 import com.jimmy.hulk.parse.core.element.PrepareParamNode;
@@ -21,15 +21,12 @@ import com.jimmy.hulk.protocol.reponse.select.PreparedStmtResponse;
 import com.jimmy.hulk.protocol.utils.HexFormatUtil;
 import com.jimmy.hulk.protocol.utils.constant.Fields;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Component
 @Slf4j
 public class Prepared {
 
@@ -41,20 +38,26 @@ public class Prepared {
 
     private final Escaper varcharEscaper;
 
-    @Autowired
-    private SQLParser sqlParser;
+    private final SQLExecutor sqlExecutor;
 
-    @Autowired
-    private SQLExecutor sqlExecutor;
+    private final SystemVariableContext systemVariableContext;
 
-    @Autowired
-    private SystemVariableContext systemVariableContext;
+    private static class SingletonHolder {
 
-    public Prepared() {
+        private static final Prepared INSTANCE = new Prepared();
+    }
+
+    private Prepared() {
         Escapers.Builder escapeBuilder = Escapers.builder();
         escapeBuilder.addEscape('\'', "\\'");
         escapeBuilder.addEscape('$', "\\$");
-        varcharEscaper = escapeBuilder.build();
+        this.varcharEscaper = escapeBuilder.build();
+        this.sqlExecutor = SQLExecutor.instance();
+        this.systemVariableContext = SystemVariableContext.instance();
+    }
+
+    public static Prepared instance() {
+        return Prepared.SingletonHolder.INSTANCE;
     }
 
     public void clear() {
@@ -69,7 +72,7 @@ public class Prepared {
     public void stmtPrepare(String sql, Session session) {
         log.info("接收到预处理SQL：{}", sql);
         //SQL解析
-        ParseResultNode parseResultNode = sqlParser.parse(sql);
+        ParseResultNode parseResultNode = SQLParser.parse(sql);
         List<PrepareParamNode> prepareParamNodes = parseResultNode.getPrepareParamNodes();
         //获取序列号
         long statementId = statementIdSequence.incrementAndGet();

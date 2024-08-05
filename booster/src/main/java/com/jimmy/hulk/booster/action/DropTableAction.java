@@ -9,20 +9,16 @@ import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.parse.core.element.TableNode;
 import com.jimmy.hulk.parse.support.AlterParser;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
 @Slf4j
 public class DropTableAction extends BaseAction {
 
-    @Autowired
-    private AlterParser alterParser;
+    private final PartSupport partSupport;
 
-    @Autowired
-    private PartSupport partSupport;
+    public DropTableAction() {
+        this.partSupport = PartSupport.instance();
+    }
 
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
@@ -33,16 +29,11 @@ public class DropTableAction extends BaseAction {
             return;
         }
 
-        TableNode tableNode = alterParser.tableParse(sql);
+        TableNode tableNode = AlterParser.tableParse(sql);
         if (tableNode == null) {
             throw new HulkException("创建表失败", ModuleEnum.BOOSTER);
         }
 
         actuator.dropTable(tableNode.getTableName());
-    }
-
-    @Override
-    public int type() {
-        return QueryParse.DROP_TABLE;
     }
 }

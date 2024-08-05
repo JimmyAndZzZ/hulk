@@ -1,9 +1,8 @@
 package com.jimmy.hulk.booster.handler;
 
-import com.jimmy.hulk.authority.base.AuthenticationManager;
 import com.jimmy.hulk.booster.core.Session;
 import com.jimmy.hulk.booster.protocol.MySqlPacketDecoder;
-import com.jimmy.hulk.booster.support.SessionPool;
+import com.jimmy.hulk.booster.bootstrap.SessionPool;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -13,20 +12,17 @@ public class HandlerInitializer extends ChannelInitializer<SocketChannel> {
 
     private static final int IDLE_CHECK_INTERVAL = 3600;
 
-    private SessionPool sessionPool;
+    private final SessionPool sessionPool;
 
-    private AuthenticationManager authenticationManager;
-
-    public HandlerInitializer(SessionPool sessionPool, AuthenticationManager authenticationManager) {
+    public HandlerInitializer(SessionPool sessionPool) {
         this.sessionPool = sessionPool;
-        this.authenticationManager = authenticationManager;
     }
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
         Session session = sessionPool.getSession();
         SessionHandler sessionHandler = new SessionHandler(session, sessionPool);
-        AuthenticatorHandler authHandler = new AuthenticatorHandler(session, sessionPool, authenticationManager);
+        AuthenticatorHandler authHandler = new AuthenticatorHandler(session, sessionPool);
         ExceptionHandler exceptionHandler = new ExceptionHandler(session, sessionPool);
         // 心跳handler
         // 1小时做一次idle check 秒为单位

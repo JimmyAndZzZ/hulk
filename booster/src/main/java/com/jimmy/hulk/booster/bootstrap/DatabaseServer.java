@@ -1,6 +1,5 @@
-package com.jimmy.hulk.booster.support;
+package com.jimmy.hulk.booster.bootstrap;
 
-import com.jimmy.hulk.authority.base.AuthenticationManager;
 import com.jimmy.hulk.booster.handler.HandlerInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -18,16 +17,13 @@ public class DatabaseServer {
 
     private final static int CONNECT_TIMEOUT_MILLIS = 5000;
 
-    private Integer port;
+    private final Integer port;
 
-    private SessionPool sessionPool;
+    private final SessionPool sessionPool;
 
-    private AuthenticationManager authenticationManager;
-
-    public DatabaseServer(Integer port, SessionPool sessionPool, AuthenticationManager authenticationManager) {
+    public DatabaseServer(Integer port, SessionPool sessionPool) {
         this.port = port;
         this.sessionPool = sessionPool;
-        this.authenticationManager = authenticationManager;
     }
 
     public void startServer() {
@@ -40,7 +36,7 @@ public class DatabaseServer {
             // 只需要保证分配ByteBuf和write在同一个线程(函数)就行了
             b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
                     .option(ChannelOption.SO_BACKLOG, 1024)
-                    .childHandler(new HandlerInitializer(sessionPool, authenticationManager)).option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                    .childHandler(new HandlerInitializer(sessionPool)).option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS)
                     .option(ChannelOption.SO_TIMEOUT, SO_TIMEOUT);
             ChannelFuture f = b.bind(port).sync();

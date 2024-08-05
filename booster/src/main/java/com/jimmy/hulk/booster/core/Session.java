@@ -4,8 +4,8 @@ import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
-import com.jimmy.hulk.authority.base.AuthenticationManager;
-import com.jimmy.hulk.booster.support.SQLExecutor;
+import com.jimmy.hulk.authority.delegator.AuthenticationManagerDelegator;
+import com.jimmy.hulk.booster.bootstrap.SQLExecutor;
 import com.jimmy.hulk.common.constant.Constants;
 import com.jimmy.hulk.common.constant.ErrorCode;
 import com.jimmy.hulk.common.exception.HulkException;
@@ -33,7 +33,11 @@ import java.util.List;
 @Slf4j
 public class Session extends Context {
 
-    private static final long AUTH_TIMEOUT = 15 * 1000L;
+    private final Integer timeout;
+
+    private final Prepared prepared;
+
+    private final AuthenticationManagerDelegator authenticationManagerDelegator;
 
     @Getter
     private Long id;
@@ -60,25 +64,19 @@ public class Session extends Context {
     @Setter
     private SQLExecutor executor;
 
-    private Prepared prepared;
-
-    private AuthenticationManager authenticationManager;
-
-    private boolean autoCommit = true;
-
     private Date lastCommitSQLTime;
 
-    private Integer timeout;
+    private boolean autoCommit = true;
 
     @Getter
     private List<String> waitTransactionSQL = Lists.newArrayList();
 
-    public Session(Integer timeout, Long id, Prepared prepared, AuthenticationManager authenticationManager) {
+    public Session(Integer timeout, Long id, Prepared prepared) {
         this.id = id;
         this.charset = Constants.Booster.DEFAULT_CHARSET;
         this.setLastActiveTime();
         this.prepared = prepared;
-        this.authenticationManager = authenticationManager;
+        this.authenticationManagerDelegator = AuthenticationManagerDelegator.instance();
         this.timeout = timeout;
     }
 
@@ -119,7 +117,7 @@ public class Session extends Context {
         // 检查schema是否已经设置
         if (schema != null) {
             if (!schema.equals(db)) {
-                if (!authenticationManager.checkConfigSchemaByUsername(this.user, db)) {
+                if (!authenticationManagerDelegator.checkConfigSchemaByUsername(this.user, db)) {
                     writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database");
                     return;
                 }
