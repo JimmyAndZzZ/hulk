@@ -18,7 +18,6 @@ import com.jimmy.hulk.data.base.DataSource;
 import com.jimmy.hulk.data.config.DataSourceProperty;
 import com.jimmy.hulk.data.support.DataSourceFactory;
 import com.jimmy.hulk.data.support.SessionFactory;
-import org.springframework.util.Assert;
 
 import java.util.Collection;
 import java.util.List;
@@ -80,7 +79,9 @@ public class DatasourceCenter {
     }
 
     public void add(String name, DataSourceProperty writeProperty, List<DataSourceProperty> readProperties, boolean isReadOnly) {
-        Assert.isTrue(writeProperty != null, "写数据源不允许为空");
+        if (writeProperty == null) {
+            throw new HulkException("写数据源不允许为空", ModuleEnum.AUTHORITY);
+        }
 
         if (datasourcePointMap.containsKey(name)) {
             throw new HulkException("该数据源已存在", ModuleEnum.ACTUATOR);

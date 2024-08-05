@@ -2,8 +2,9 @@ package com.jimmy.hulk.authority.datasource;
 
 import cn.hutool.core.collection.CollUtil;
 import com.google.common.collect.Lists;
+import com.jimmy.hulk.common.enums.ModuleEnum;
+import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.base.DataSource;
-import org.springframework.util.Assert;
 
 import java.util.List;
 
@@ -18,7 +19,9 @@ public class DatasourcePoint {
     private DatasourcePool readPool;
 
     public DatasourcePoint(String name, DataSource write, List<DataSource> read, boolean isReadOnly) {
-        Assert.isTrue(write != null, "写数据源不允许为空");
+        if (write == null) {
+            throw new HulkException("写数据源不允许为空", ModuleEnum.AUTHORITY);
+        }
 
         this.name = name;
         this.write = write;

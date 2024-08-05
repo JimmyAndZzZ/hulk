@@ -10,7 +10,6 @@ import com.jimmy.hulk.actuator.base.Serializer;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,7 +28,6 @@ public class KryoSerializer implements Serializer {
         kryo.register(HashMap.class, new MapSerializer());
         kryo.register(Timestamp.class);
         kryo.register(BigInteger.class);
-        kryo.register(LinkedCaseInsensitiveMap.class);
         kryo.register(BigDecimal.class);
         kryo.reference(false);
         kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());

@@ -10,10 +10,7 @@ import com.jimmy.hulk.common.exception.HulkException;
 import com.jimmy.hulk.data.actuator.Actuator;
 import com.jimmy.hulk.parse.core.element.TableNode;
 import com.jimmy.hulk.parse.support.AlterParser;
-import com.jimmy.hulk.protocol.utils.parse.QueryParse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 

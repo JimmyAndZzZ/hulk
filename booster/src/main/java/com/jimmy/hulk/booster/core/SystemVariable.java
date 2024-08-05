@@ -2,7 +2,6 @@ package com.jimmy.hulk.booster.core;
 
 import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Maps;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 

@@ -1,13 +1,13 @@
 package com.jimmy.hulk.actuator.memory;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jimmy.hulk.actuator.base.Segment;
 import com.jimmy.hulk.common.enums.ModuleEnum;
 import com.jimmy.hulk.common.exception.HulkException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.Assert;
 
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;

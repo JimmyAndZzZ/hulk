@@ -1,6 +1,7 @@
 package com.jimmy.hulk.actuator.memory;
 
-import org.springframework.util.Assert;
+
+import cn.hutool.core.lang.Assert;
 
 import java.nio.ByteBuffer;
 
