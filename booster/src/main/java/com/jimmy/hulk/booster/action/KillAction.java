@@ -9,12 +9,6 @@ import io.netty.channel.ChannelHandlerContext;
 
 public class KillAction extends BaseAction {
 
-    private final SessionPool sessionPool;
-
-    public KillAction() {
-        this.sessionPool = SessionPool.instance();
-    }
-
     @Override
     public void action(String sql, Session session, int offset) throws Exception {
         ChannelHandlerContext ctx = session.getChannelHandlerContext();
@@ -41,11 +35,11 @@ public class KillAction extends BaseAction {
             return;
         }
         // get connection and close it
-        Session clientSession = sessionPool.get(value);
+        Session clientSession = SessionPool.instance().get(value);
 
         if (clientSession != null) {
             clientSession.close();
-            sessionPool.remove(value);
+            SessionPool.instance().remove(value);
 
             OkPacket packet = new OkPacket();
             packet.packetId = 1;

@@ -1,6 +1,7 @@
 package com.jimmy.hulk.data.connection;
 
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
@@ -52,7 +53,7 @@ public class ExcelConnection implements Connection<ExcelWriter, String, List<Str
             throw new HulkException("excel信息为空", ModuleEnum.DATA);
         }
 
-        this.excelWriter = EasyExcel.write(path + File.separator + excelProperties.getFileName()).head(excelProperties.getHead()).build();
+        this.excelWriter = EasyExcel.write(path + StrUtil.SLASH + excelProperties.getFileName()).head(excelProperties.getHead()).build();
         this.writeSheet = EasyExcel.writerSheet("结果集").build();
     }
 

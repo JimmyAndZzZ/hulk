@@ -820,7 +820,6 @@ public class SelectAction extends BaseAction {
         //直接查询则不会进行sql解析
         if (MapUtil.isNotEmpty(data)) {
             selectResponse.writeRow(data.values(), session, buffer);
-            return;
         }
     }
 

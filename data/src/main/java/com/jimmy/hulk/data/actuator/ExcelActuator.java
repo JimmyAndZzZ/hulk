@@ -79,7 +79,7 @@ public class ExcelActuator extends Actuator<String> {
             throw new HulkException("路径为空", ModuleEnum.DATA);
         }
 
-        url = url + File.separator + tableName;
+        url = url + StrUtil.SLASH + tableName;
         List<Column> columns = Lists.newArrayList();
         DynamicReadListener dynamicReadListener = new DynamicReadListener();
         ExcelReaderBuilder read = EasyExcel.read(url, dynamicReadListener);

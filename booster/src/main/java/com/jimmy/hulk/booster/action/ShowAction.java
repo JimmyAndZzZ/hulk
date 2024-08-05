@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -132,47 +134,46 @@ public class ShowAction extends BaseAction {
     }
 
     @Data
-    public class ShowCreateTable {
+    public static class ShowCreateTable {
 
         private String table;
 
         public ShowCreateTable(String sql) {
-            String createTableName = StrUtil.removeAll(sql, "SHOW CREATE TABLE");
-            this.table = StrUtil.trim(createTableName);
-            this.table = StrUtil.removeAll(table, "`");
+            String regex = "`([^`]+)`";
 
-            List<String> split = StrUtil.split(table, ".");
-            if (split.size() == 1) {
-                this.table = StrUtil.trim(table);
-                return;
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(sql);
+
+            while (matcher.find()) {
+                this.table = matcher.group(1);
             }
-
-            this.table = StrUtil.trim(StrUtil.removeAll(this.table, split.get(0) + "."));
         }
     }
 
     @Data
-    public class ShowColumn {
+    public static class ShowColumn {
 
         private String table;
 
         private String schema = ExecuteHolder.getDatasourceName();
 
         public ShowColumn(String sql) {
-            if (StrUtil.containsAnyIgnoreCase(sql, "FROM")) {
-                sql = StrUtil.replaceIgnoreCase(sql, "from", "FROM");
-            }
+            String regex = "(?:(`?)([^`]+)\\1\\.)?`([^`]+)`";
+            Pattern pattern = Pattern.compile(regex);
 
-            String from = StrUtil.subAfter(sql, "FROM", true);
-            from = StrUtil.removeAll(from, "`");
-            List<String> split = StrUtil.split(from, ".");
-            if (split.size() == 1) {
-                this.table = StrUtil.trim(from);
-                return;
-            }
+            Matcher matcher = pattern.matcher(sql);
 
-            this.schema = StrUtil.trim(split.get(0));
-            this.table = StrUtil.trim(StrUtil.removeAll(from, split.get(0) + "."));
+            if (matcher.find()) {
+                String group2 = matcher.group(2);
+                if (StrUtil.isNotBlank(group2)) {
+                    this.schema = group2;
+                }
+
+                String group3 = matcher.group(3);
+                if (StrUtil.isNotBlank(group3)) {
+                    this.table = group3;
+                }
+            }
         }
     }
 }

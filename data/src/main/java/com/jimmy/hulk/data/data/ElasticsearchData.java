@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.jimmy.hulk.common.core.Column;
 import com.jimmy.hulk.common.enums.AggregateEnum;
 import com.jimmy.hulk.common.enums.ConditionTypeEnum;
 import com.jimmy.hulk.common.enums.DatasourceEnum;
@@ -32,6 +33,9 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -57,6 +61,7 @@ import org.elasticsearch.search.suggest.completion.CompletionSuggestionBuilder;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -428,24 +433,66 @@ public class ElasticsearchData extends BaseData {
     }
 
     /**
+     * 获取索引字段集合
+     *
+     * @return
+     * @throws IOException
+     */
+    private Set<String> getIndexColumns() throws IOException {
+        //指定索引
+        GetMappingsRequest getMappings = new GetMappingsRequest().indices(this.indexName);
+        //调用获取
+        GetMappingsResponse getMappingResponse = client.indices().getMapping(getMappings, RequestOptions.DEFAULT);
+        //处理数据
+        Map<String, MappingMetaData> allMappings = getMappingResponse.mappings();
+
+        Set<String> columns = Sets.newHashSet();
+
+        for (Map.Entry<String, MappingMetaData> indexValue : allMappings.entrySet()) {
+            Map<String, Object> mapping = indexValue.getValue().sourceAsMap();
+
+            Object object = mapping.get("properties");
+            if (object != null) {
+                Map<String, Object> value = (Map<String, Object>) object;
+                columns.addAll(value.keySet());
+            }
+        }
+
+        return columns;
+    }
+
+    /**
      * 返回处理
      *
      * @param wrapper
      * @param response
      * @return
      */
-    private List<Map<String, Object>> responseHandler(Wrapper wrapper, SearchResponse response) {
+    private List<Map<String, Object>> responseHandler(Wrapper wrapper, SearchResponse response) throws IOException {
         QueryPlus queryPlus = wrapper.getQueryPlus();
         List<String> groupBy = queryPlus.getGroupBy();
         List<AggregateFunction> aggregateFunctions = queryPlus.getAggregateFunctions();
         //普通查询
         if (CollUtil.isEmpty(groupBy) && CollUtil.isEmpty(aggregateFunctions)) {
+            Set<String> indexColumns = this.getIndexColumns();
+
             List<Map<String, Object>> result = Lists.newArrayList();
             SearchHit[] hits = response.getHits().getHits();
             for (SearchHit hit : hits) {
+                Map<String, Object> record = Maps.newHashMap();
+                record.put("_id", hit.getId());
+
                 Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                sourceAsMap.put("_id", hit.getId());
-                result.add(sourceAsMap);
+
+                if (CollUtil.isEmpty(indexColumns)) {
+                    result.add(sourceAsMap);
+                } else {
+                    for (String indexColumn : indexColumns) {
+                        record.put(indexColumn, sourceAsMap.get(indexColumn));
+                    }
+
+                    result.add(record);
+                }
             }
 
             return result;

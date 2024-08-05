@@ -50,7 +50,7 @@ public class ExcelData extends BaseData {
             throw new HulkException("excel数据源为空", ModuleEnum.DATA);
         }
 
-        this.path = url + File.separator + indexName;
+        this.path = url + StrUtil.SLASH + indexName;
 
         if (StrUtil.endWithIgnoreCase(path, ExcelTypeEnum.CSV.getValue())) {
             this.excelType = ExcelTypeEnum.CSV;

@@ -260,6 +260,9 @@ public class ElasticsearchActuator extends Actuator<String> {
      */
     private String getColumnType(Column column) {
         FieldTypeEnum fieldTypeEnum = column.getFieldTypeEnum();
+        if (fieldTypeEnum == null) {
+            return FieldTypeEnum.VARCHAR.getCode();
+        }
 
         String code = fieldTypeEnum.getCode();
         boolean needLength = fieldTypeEnum.isNeedLength();
